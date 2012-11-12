@@ -91,11 +91,12 @@
 #define TIME_ERR      10026	//输入的开始时间或结束时间检索不出数据
 #define COLSE_ERR     10027	//还有读或者写未关闭，不能关闭录像卷
 #define LOCK_ERR      10028	//
-#define NOT_EXIST_RECORD_IN_PARM 10029	//在配置文件中未找到摄像头的记录信息
+#define NOT_EXIST_CAMERA   10029	//在配置文件中未找到摄像头的记录信息
 #define ERR_TIME_INTERL 10031
 #define NVR_CREATWRITEDATATHREADFAIL 10030
 #define SPACE_NOT_EOUGH 10032
 #define ZERO_TNODE 10033
+#define NOT_EXIST_CAMERALIST 10034
 
 
 
@@ -235,6 +236,7 @@ typedef struct DataSegInfo {
 } seginfo;
 //全局变量
 
+
 extern SBTable sbTable;
 
 void sb_to_buf(char *buf, SBlock * sb);
@@ -254,8 +256,8 @@ _sbinfo get_sbinfo(const char *volumeid);
 _vnodeInfo get_Vi(vnode * v, int key);
 int delete_vi(_sbinfo sbinfo, vnode * v, char mode, int key);
 int free_vi(_sbinfo sbinfo, int nr);
-int read_vol_by_camera(char *vol_path, const char *cameraid);
-int write_parm_file(const char *vol_path, const char *cameraid);
+//int read_vol_by_camera(char *vol_path, const char *cameraid);
+//int write_parm_file(const char *vol_path, const char *cameraid);
 
 _vnodeInfo alloc_vi(_sbinfo sbinfo);
 

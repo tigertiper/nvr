@@ -564,7 +564,7 @@ get_dev_ID(const char *cameraid, _sbinfo * sbinf)
 	vnode *v;
 	char vol_path[VolNameLength];
 	if (read_vol_by_camera(vol_path, cameraid) < 0) {
-		ErrorFlag = NOT_EXIST_RECORD_IN_PARM;
+		//ErrorFlag = NOT_EXIST_RECORD;
 		return -1;
 	}
 	if (!spin_rdlock(sbTable.spin)) {	//?????
@@ -609,6 +609,7 @@ get_dev_ID(const char *cameraid, _sbinfo * sbinf)
 }
 
 
+/*
 int
 read_vol_by_camera(char *vol_path, const char *cameraid)
 {
@@ -661,3 +662,6 @@ read_vol_by_camera(char *vol_path, const char *cameraid)
 	fclose(fp);
 	return flag1;
 }
+*/
+
+

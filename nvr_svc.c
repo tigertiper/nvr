@@ -13,7 +13,7 @@
 #include <netinet/in.h>
 #include <signal.h>
 #include <unistd.h>
-#include <syslog.h>
+#include <syslog.h> 
 
 #include "Debug.h"
 
@@ -214,6 +214,14 @@ main(int argc, char **argv)
 	pthread_t pid, pid1;
 	pthread_t pid_sstatus;
 
+
+    if(initCameraInfos()<0){
+        TRACE_LOG("Init CameraInofs error!");
+        exit(1);
+    }
+
+    showCameraList();
+    
 	//added by wsr 20121030
 	//open logfile
 	openlog(__FILE__, LOG_PID, LOG_LOCAL1);

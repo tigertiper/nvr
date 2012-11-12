@@ -8,6 +8,7 @@
 #define MAX_CAMERA 100
 #define MAX_LOGINS 1024
 #define MAX_STREAMS 100
+#define MAX_CAMERA_NUMS 100
 #define CAMERAIDLEN 256
 #define STREAM_BUFFER_SIZE 10*1024*1024
 #define HASH(hd) (((unsigned int)hd%MAX_STREAMS))

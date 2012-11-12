@@ -48,7 +48,14 @@ typedef struct {
     long int msgType;
     char volName[VolNameLength];
 } DelVideoVolMsg;
+ 
+typedef struct CameraInfo{
+   char CameraID[CAMERAIDLEN];
+   char lv_name[VolNameLength];
+   struct CameraInfo* next;
+}CameraInfo;
 
+extern CameraInfo*CameraInfos;
 extern unsigned long long get_lv_size(const char *volName);
 int is_vedio_LVM(const char *Volpath, SBlock * sb);
 int CreatRecordSeg(char *cameraid, seginfo * sinfo, char *buf, short size);
@@ -78,5 +85,18 @@ int DeleteRecordVol(const char *cameraid, int mode);	//0 表示强制使用，1,
 int DeleteVideoVol(const char *volPath);
 
 int alloc_blocks_for_vnode(_sbinfo sbinfo, unsigned long long blocks, vnode * v);
+
+
+int creatCameraList();
+void showCameraList();
+int addCameraInfo(const char * cameraID,  const char * volName);
+int read_vol_by_camera( char * vol_path, const char * cameraID);
+int removeCameraInfo(const char *cameraID);
+int removeCameraInfoByVol(const char *vol_path);
+
+
+
+
+
 
 #endif

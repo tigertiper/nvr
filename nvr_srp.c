@@ -408,7 +408,7 @@ nvrproc_login(LOGINargs loginargs)
 {
 	TRACE_LOG( "%s:%d start to login!\n", ClientIP, ClientPort);
 	clearInactiveStreams();
-	get_lv_name(lv, MAX_LV_NUM);
+	//get_lv_name(lv, MAX_LV_NUM);
 	//if(num<=0)return -1;
 	if (loginargs.userName == NULL || loginargs.pwd == NULL)
 	{
@@ -595,7 +595,7 @@ VolOpThread(void *arg)
 		TRACE_LOG( "msgget failed with error: %d. *exit*\n", errno);
 		exit(1);
 	}
-
+    
 	while (1) {
 		ret = msgrcv(recvQID, (void *)&creatMsg, sizeof(CreatRecVolMsg) - sizeof(long int), CREAT_REC_VOL_ARGS, IPC_NOWAIT);
 		if (ret != -1) {
@@ -675,7 +675,7 @@ get_free_vol_size(const char *volName)
       err:
 	free(sb);
 	close(fd1);
-	return 0;
+	return -1;
 }
 
 
@@ -699,12 +699,16 @@ get_lv_name(LvInfo * lv_info, int max)
 			line[i] = '\0';
 			strcpy(lv_info[num].lv_name, "/dev/");
 			strcat(lv_info[num].lv_name, tmp);
-			//printf("%s",lv_info[num].lv_name);
 			lv_info[num].length = get_free_vol_size(lv_info[num].lv_name);
-//             printf("%s\t",lv_info[num].lv_name);
-			//            printf("%ld\n",lv_info[num].length);
+            TRACE_LOG("get_lv_name():%d\t%s\t%ld\n",num,lv_info[num].lv_name,lv_info[num].length);
 			if (lv_info[num].length != -1)
+            {         
 				num++;
+            }
+            else
+            {
+                bzero(lv_info[num].lv_name, CNameLength);
+            }
 			if (num >= max)
 				break;
 		}
@@ -722,6 +726,62 @@ int watch_stream_status()
 		get_stream_infos();
 	}
 	return 0;
+}
+
+int initCameraInfos()
+{
+     int i;
+     int count=0;
+     char *vbitmap;
+     int fd;
+     char buf[Vnode_SIZE];
+     vnode v;
+     const char *lv_name;
+     if(creatCameraList()<0)
+        return -1;
+     get_lv_name (lv, MAX_LV_NUM);  
+     for (i = 0; i < MAX_LV_NUM; i++) {
+            lv_name = (const char*)lv[i].lv_name;
+            if('\0' == *lv_name)
+            {
+                break;
+            }
+            TRACE_LOG("initCameraInfos():Opening %s...\n", lv_name);
+            if((fd=open(lv_name, O_RDONLY))<0){
+                 ErrorFlag=OPEN_FILE_ERR;
+				 TRACE_LOG("initCameraInfos():Open lv error!\n");
+                 return -1;
+            }
+            if((vbitmap=(char *)malloc(sizeof(char) *(MaxUsers / 8)))==NULL){
+                ErrorFlag=MALLOC_ERR;
+                close(fd);
+				TRACE_LOG("initCameraInfos():Malloc error!\n");
+                return -1;
+            }
+            if(_read(fd, vbitmap, MaxUsers / 8, VBitmapAddr)<0){
+                 close(fd);
+                 free(vbitmap);
+				 TRACE_LOG("initCameraInfos():Read vbitmap error!\n");
+                 return -1;
+            }
+            count=0;
+            while(count<MaxUsers) {
+                if(bit(vbitmap,count)){
+                      if(_read(fd,buf,Vnode_SIZE,VnodeAddr+count*Vnode_SIZE)<0){
+                          close(fd);
+                          free(vbitmap);
+				          TRACE_LOG("initCameraInfos():Read vode error!\n");
+                          return -1;
+                       }
+                       buf_to_vnode(buf,&v);
+                       addCameraInfo(v.cameraid,lv_name);  
+                }
+            count++;
+            }
+            close(fd);
+            free(vbitmap);   
+     }
+     return 0;
 }
 
 

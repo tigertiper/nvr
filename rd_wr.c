@@ -7,12 +7,16 @@
 #include<sys/stat.h>
 #include"rd_wr.h"
 #include"multi_stream.h"
+#include"Debug.h"
 unsigned long long InitFlag = 0;
 #define  _TLEN(v)         ((v->savedDays*24*60*60)/(TimeBuffSize))
 #define _FISTTIMESIZE(v)    TimeBuffSize
 #define _Maxtime(v)       (v->savedDays*24*60*60)
 #define _TimeBuffSize(v)  TimeBuffSize
 #define address_of_pointer(x) (long)((void*)x)
+
+
+CameraInfo* CameraInfos = NULL; 
 
 //#define RandBase 200*1024     //for test
 
@@ -1727,7 +1731,7 @@ alloc_ID(const char *vol_path, const char *cameraid, _sbinfo * sbinf, int *ID)
 	char buf[Vnode_SIZE];
 	vnode *v;
 	if (read_vol_by_camera(NULL, cameraid) == 0) {
-		ErrorFlag = EXIST_SAME_NAME;
+		//ErrorFlag = EXIST_SAME_NAME;
 		return -1;
 	}
 	if (!spin_rdlock(sbTable.spin)) {	//?????
@@ -1763,6 +1767,49 @@ alloc_ID(const char *vol_path, const char *cameraid, _sbinfo * sbinf, int *ID)
 	return flag;
 }
 
+int get_cameras_from_vol(char cameras[][CNameLength], int *num,
+			 const char *volName)
+{
+ 
+int count=0;
+char *vbitmap;
+int fd;
+char buf[Vnode_SIZE];
+vnode v;
+(*num)=0;
+  if((fd=open(volName,O_RDONLY))<0){
+                 ErrorFlag=OPEN_FILE_ERR;
+                  return -1;
+     }
+ if((vbitmap=(char *)malloc(sizeof(char) *(MaxUsers / 8)))==NULL){
+              ErrorFlag=MALLOC_ERR;
+              return -1;
+          }
+           if(_read(fd, vbitmap, MaxUsers / 8, VBitmapAddr)<0){
+                    close(fd);
+                   free(vbitmap);
+                   return -1;
+           }
+           count=0;
+            while(count<MaxUsers) {
+                  if(bit(vbitmap,count)){
+                      if(_read(fd,buf,Vnode_SIZE,VnodeAddr+count*Vnode_SIZE)<0){
+                       close(fd);
+                       free(vbitmap);
+                       return -1;
+                      }
+                    buf_to_vnode(buf,&v);
+                   memcpy(cameras[*num],v.cameraid,CNameLength); 
+                    (*num)++;
+              }
+            count++;
+          }
+     close(fd);
+    free(vbitmap);
+     return 0;
+}
+
+/*
 int
 write_parm_file(const char *vol_path, const char *cameraid)
 {
@@ -1812,7 +1859,7 @@ write_parm_file(const char *vol_path, const char *cameraid)
 	return 0;
 }
 
-
+*/
 
 int
 CreateRecordVol(char *volumeid, char *name, char *alias, short savedDays, char delPolicy, char encodeType, unsigned long long blocks)
@@ -1840,11 +1887,12 @@ CreateRecordVol(char *volumeid, char *name, char *alias, short savedDays, char d
 		clrbit_(sbinfo->vnodemapping, ID);
 		goto err;
 	}
-	if (write_parm_file(volumeid, name) < 0) {
-		printf("..........write para file failed!.........\n");
+	if (addCameraInfo(name, volumeid)< 0) {
+		printf("..........Add Camera failed!.........\n");
 		clrbit_(sbinfo->vnodemapping, ID);
 		goto err;
 	}
+    showCameraList();
 	return 0;
 
       err:
@@ -1852,6 +1900,9 @@ CreateRecordVol(char *volumeid, char *name, char *alias, short savedDays, char d
 	return -1;
 }
 
+
+
+/*
 int
 delete_parm_file(const char *cameraid)
 {
@@ -1913,6 +1964,7 @@ delete_parm_file(const char *cameraid)
 	fclose(fp);
 	return 0;
 }
+*/
 
 int
 DeleteRecordVol(const char *cameraid, int mode)
@@ -1922,6 +1974,7 @@ DeleteRecordVol(const char *cameraid, int mode)
 	int ID, handle;
 	_vnodeInfo vi;
 	//seginfo * seg;
+	TRACE_LOG("Delete RecordVol...");
 	handle = get_dev_ID(cameraid, &sbinfo);
 	if (handle == -1)
 		return -1;
@@ -1948,14 +2001,16 @@ DeleteRecordVol(const char *cameraid, int mode)
 	free_vnode(sbinfo, v);
 	if (put_vnode(sbinfo, v, sbinfo->vnodemapping, (((char *)v) - (char *)sbinfo->vnodeTable) / sizeof(vnode)) < 0)
 		goto err;
-	if (delete_parm_file(cameraid) < 0)
+	if (removeCameraInfo (cameraid) < 0)
 		goto err;
+    showCameraList();
 	return 0;
       err:
 	return -1;
 }
 
 
+/*
 int
 delete_all_parm_file(const char *vol_path)
 {
@@ -2016,6 +2071,7 @@ delete_all_parm_file(const char *vol_path)
 	fclose(fp);
 	return 0;
 }
+*/
 
 int
 DeleteVideoVol(const char *vol_path)
@@ -2050,7 +2106,7 @@ DeleteVideoVol(const char *vol_path)
 	}			//end while(i<MaxUsers)?
 	if (flag == 1)
 		return -2;
-	if (delete_all_parm_file(vol_path) < 0) {
+	if (removeCameraInfoByVol(vol_path) < 0) {
 		return -1;
 	}
 	if (!spin_wrlock(sbTable.spin)) {	//?????
@@ -2088,3 +2144,136 @@ DeleteVideoVol(const char *vol_path)
 	free(sbinfo);
 	return 0;
 }
+
+int creatCameraList()//creat camera list
+{
+    CameraInfos = NULL;
+    if( NULL == (CameraInfos = malloc(sizeof(CameraInfo))))
+    {
+        ErrorFlag = MALLOC_ERR;
+        return -1;
+    }
+    bzero(CameraInfos->CameraID, CAMERAIDLEN);
+    bzero(CameraInfos->lv_name,VolNameLength);
+    CameraInfos->next = NULL;
+    return 0;
+}
+
+void showCameraList()
+{
+    if(CameraInfos)
+    {
+         TRACE_LOG("Show Camera List:\n");
+         CameraInfo * p = CameraInfos;
+         while(p->next != NULL)
+         {
+            TRACE_LOG("%s\n",p->next->CameraID);
+            p = p->next;
+         }
+    }
+}
+
+int addCameraInfo(const char * cameraID, const char * volName)
+{  
+    CameraInfo* pCameraInfo = NULL;
+    if(NULL ==CameraInfos)//camera list is not exist 
+    {
+        ErrorFlag = NOT_EXIST_CAMERALIST;
+		printf("AddCameraInfo():Not exist cameralist!");
+        return -1;
+    } 
+    if(!read_vol_by_camera(NULL, cameraID))
+    {
+        ErrorFlag = EXIST_SAME_NAME;
+        return -1;    
+    }
+    pCameraInfo = CameraInfos->next;//insert one node 
+    if( NULL == (CameraInfos->next = malloc(sizeof(CameraInfo))))
+    {
+        ErrorFlag = MALLOC_ERR;
+        return -1;
+    }
+
+    strcpy(CameraInfos->next->CameraID, cameraID);
+    strcpy(CameraInfos->next->lv_name, volName);
+    CameraInfos->next->next = pCameraInfo;
+    return 0;
+}
+
+int read_vol_by_camera(char * vol_path, const char * cameraID)
+{
+    if(NULL ==CameraInfos)//if head is null ,camera list is not exit 
+    {
+        ErrorFlag = NOT_EXIST_CAMERALIST;
+        return -1;
+    }
+    CameraInfo* pCameraInfo = CameraInfos;
+    while(pCameraInfo->next != NULL)
+    {
+        if(!strcmp(pCameraInfo->next->CameraID, cameraID))
+        { 
+            if(vol_path)
+                strcpy(vol_path, pCameraInfo->next->lv_name);
+            return 0;
+        }
+        pCameraInfo = pCameraInfo->next;        
+    }
+    ErrorFlag = NOT_EXIST_CAMERA;
+    return -1;     
+}
+
+int removeCameraInfo(const char *cameraID)
+{
+    
+    if(NULL ==CameraInfos)//  camera list is not creat 
+    {
+         ErrorFlag = NOT_EXIST_CAMERALIST;
+         return -1;
+    }
+    CameraInfo* pCameraInfo = CameraInfos;
+    CameraInfo* pTemp = NULL;
+    while(pCameraInfo->next != NULL)
+    {
+        if(!strcmp(pCameraInfo->next->CameraID, cameraID))
+        {   
+            pTemp = pCameraInfo->next;
+            pCameraInfo->next = pCameraInfo->next->next;
+            free(pTemp);
+            return 0;
+        }
+        pCameraInfo = pCameraInfo->next; 
+    }
+    ErrorFlag = NOT_EXIST_CAMERA;
+    return -1;
+}
+
+int removeCameraInfoByVol(const char *vol_path)
+{
+    int flag = 0;
+    if(NULL ==CameraInfos)//  camera list is not creat 
+    {
+         ErrorFlag = NOT_EXIST_CAMERALIST;
+         return -1;
+    }
+    CameraInfo* pCameraInfo = CameraInfos;
+    CameraInfo* pTemp = NULL;
+    while(pCameraInfo->next != NULL)
+    {
+        if(!strcmp(pCameraInfo->next->lv_name, vol_path))
+        {   
+            pTemp = pCameraInfo->next; 
+            pCameraInfo->next = pCameraInfo->next->next; 
+            free(pTemp);
+            flag = 1;
+        }
+        pCameraInfo = pCameraInfo->next; 
+    }
+    if(0 == flag)
+    {
+        ErrorFlag = NOT_EXIST_LVM;
+        return -1;
+    }
+    return 0;
+}
+
+

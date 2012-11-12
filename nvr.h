@@ -226,6 +226,7 @@ typedef struct RECORDBYORDERres RECORDBYORDERres;
     extern int nvrprog_1_freeresult(SVCXPRT *, xdrproc_t, caddr_t);
     extern void *VolOpThread(void *);
     extern void *WriteTnodeThread(void *);
+    extern int initCameraInfos();
 
 #else				/* K&R C */
 #define NVRPROC_OPEN 1
