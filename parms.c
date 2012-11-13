@@ -609,59 +609,5 @@ get_dev_ID(const char *cameraid, _sbinfo * sbinf)
 }
 
 
-/*
-int
-read_vol_by_camera(char *vol_path, const char *cameraid)
-{
-	FILE *fp;
-	char buf[CONF_LEN];
-	char name[CNameLength + 1];
-	char name1[CNameLength + 1];
-	char flag, flag1 = -1;
-	int i, k;
-	if ((fp = fopen(PARM_FILE, "r")) == NULL) {
-		return -1;
-	}
-	if (fseek(fp, 0, SEEK_SET) < 0) {
-		fclose(fp);
-		return -1;
-	}
-	while (fgets(buf, CONF_LEN, fp) > 0) {
-		i = 0;
-		while (buf[i] == ' ' || buf[i] == '\t' || buf[i] == '\n')
-			i++;
-		flag = buf[i];
-		if (flag == 'N')
-			continue;
-		i++;
-		while (buf[i] == ' ')
-			i++;
-		k = 0;
-		while (buf[i] != ' ') {
-			name1[k] = buf[i];
-			i++;
-			k++;
-		}
-		name1[k] = '\0';
-		k = 0;
-		while (buf[i] == ' ')
-			i++;
-		while (buf[i] != '\t' && buf[i] != '\n' && buf[i] != ' ') {
-			name[k] = buf[i];
-			k++;
-			i++;
-		}
-		name[k] = '\0';
-		if (strcmp(name, cameraid) == 0) {
-			flag1 = 0;
-			if (vol_path)
-				memcpy(vol_path, name1, strlen(name1) + 1);
-			break;
-		}
-	}
-	fclose(fp);
-	return flag1;
-}
-*/
 
 

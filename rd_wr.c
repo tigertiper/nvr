@@ -1731,7 +1731,7 @@ alloc_ID(const char *vol_path, const char *cameraid, _sbinfo * sbinf, int *ID)
 	char buf[Vnode_SIZE];
 	vnode *v;
 	if (read_vol_by_camera(NULL, cameraid) == 0) {
-		//ErrorFlag = EXIST_SAME_NAME;
+		ErrorFlag = EXIST_SAME_NAME;
 		return -1;
 	}
 	if (!spin_rdlock(sbTable.spin)) {	//?????
