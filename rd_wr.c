@@ -1808,59 +1808,7 @@ vnode v;
     free(vbitmap);
      return 0;
 }
-
-/*
-int
-write_parm_file(const char *vol_path, const char *cameraid)
-{
-	FILE *fp;
-	char buf[CONF_LEN];
-	long pos;
-	int i;
-	int flag1 = 0;
-	char flag;
-	memset(buf, CONF_LEN, 0);
-	if ((fp = fopen(PARM_FILE, "a+")) == NULL) {
-		return -1;
-	}
-	if (fseek(fp, 0, SEEK_SET) < 0) {
-		fclose(fp);
-		return -1;
-	}
-//
-	pos = ftell(fp);
-	while (fgets(buf, CONF_LEN, fp) > 0) {
-		i = 0;
-		while (buf[i] == ' ' || buf[i] == '\t' || buf[i] == '\n')
-			i++;
-		flag = buf[i];
-		if (flag == 'N') {
-			if (fseek(fp, pos, SEEK_SET) < 0) {
-				fclose(fp);
-				return -1;
-			}
-			sprintf(buf, "\t%c %64s %64s\n", 'Y', vol_path, cameraid);
-			fputs(buf, fp);
-			flag1 = 1;
-			break;
-		}
-		pos = ftell(fp);
-	}
-	if (flag1 == 0) {
-		if (fseek(fp, pos, SEEK_SET) < 0) {
-			fclose(fp);
-			return -1;
-		}
-		sprintf(buf, "\t%c %64s %64s\n", 'Y', vol_path, cameraid);
-		fputs(buf, fp);
-	}
-	fflush(fp);
-	fclose(fp);
-	return 0;
-}
-
-*/
-
+ 
 int
 CreateRecordVol(char *volumeid, char *name, char *alias, short savedDays, char delPolicy, char encodeType, unsigned long long blocks)
 {
@@ -1899,73 +1847,7 @@ CreateRecordVol(char *volumeid, char *name, char *alias, short savedDays, char d
 	  	printf("....create record vol failed, err = %d......\n", ErrorFlag);
 	return -1;
 }
-
-
-
-/*
-int
-delete_parm_file(const char *cameraid)
-{
-	FILE *fp;
-	char buf[CONF_LEN];
-	char name[CNameLength + 1];
-	char name1[CNameLength + 1];
-	char flag;
-	int i, k;
-	long pos;
-	if ((fp = fopen(PARM_FILE, "r+")) == NULL) {
-		return -1;
-	}
-	if (fseek(fp, 0, SEEK_SET) < 0) {
-		fclose(fp);
-		return -1;
-	}
-	pos = ftell(fp);
-	while (fgets(buf, CONF_LEN, fp) > 0) {
-		i = 0;
-		while (buf[i] == ' ' || buf[i] == '\t')
-			i++;
-		flag = buf[i];
-		if (flag == 'N') {
-			pos = ftell(fp);
-			continue;
-		}
-		i++;
-		while (buf[i] == ' ')
-			i++;
-		k = 0;
-		while (buf[i] != ' ') {
-			name1[k] = buf[i];
-			k++;
-			i++;
-		}
-		name1[k] = '\0';
-		while (buf[i] == ' ')
-			i++;
-		k = 0;
-		while (buf[i] != '\t' && buf[i] != '\n') {
-			name[k] = buf[i];
-			k++;
-			i++;
-		}
-		name[k] = '\0';
-		if (strcmp(name, cameraid) == 0) {
-			if (fseek(fp, pos, SEEK_SET) < 0) {
-				fclose(fp);
-				return -1;
-			}
-			sprintf(buf, "\t%c %64s %64s\n", 'N', name1, name);
-			fputs(buf, fp);
-			break;
-		}
-		pos = ftell(fp);
-	}
-	fflush(fp);
-	fclose(fp);
-	return 0;
-}
-*/
-
+ 
 int
 DeleteRecordVol(const char *cameraid, int mode)
 {				//mode==0 强制删除 mode==1 要等读写完成之后才删除
@@ -2008,71 +1890,7 @@ DeleteRecordVol(const char *cameraid, int mode)
       err:
 	return -1;
 }
-
-
-/*
-int
-delete_all_parm_file(const char *vol_path)
-{
-	FILE *fp;
-	char buf[CONF_LEN];
-	char name[CNameLength + 1];
-	char name1[CNameLength + 1];
-	char flag;
-	int i, k;
-	long pos;
-	if ((fp = fopen(PARM_FILE, "r+")) == NULL) {
-		return -1;
-	}
-	if (fseek(fp, 0, SEEK_SET) < 0) {
-		fclose(fp);
-		return -1;
-	}
-	pos = ftell(fp);
-	while (fgets(buf, CONF_LEN, fp) > 0) {
-		i = 0;
-		while (buf[i] == ' ' || buf[i] == '\t')
-			i++;
-		flag = buf[i];
-		if (flag == 'N') {
-			pos = ftell(fp);
-			continue;
-		}
-		i++;
-		while (buf[i] == ' ')
-			i++;
-		k = 0;
-		while (buf[i] != ' ') {
-			name1[k] = buf[i];
-			k++;
-			i++;
-		}
-		name1[k] = '\0';
-		while (buf[i] == ' ')
-			i++;
-		k = 0;
-		while (buf[i] != '\t' && buf[i] != '\n') {
-			name[k] = buf[i];
-			k++;
-			i++;
-		}
-		name[k] = '\0';
-		if (strcmp(name1, vol_path) == 0) {
-			if (fseek(fp, pos, SEEK_SET) < 0) {
-				fclose(fp);
-				return -1;
-			}
-			sprintf(buf, "\t%c %64s %64s\n", 'N', name1, name);
-			fputs(buf, fp);
-		}
-		pos = ftell(fp);
-	}
-	fflush(fp);
-	fclose(fp);
-	return 0;
-}
-*/
-
+ 
 int
 DeleteVideoVol(const char *vol_path)
 {
@@ -2248,8 +2066,7 @@ int removeCameraInfo(const char *cameraID)
 }
 
 int removeCameraInfoByVol(const char *vol_path)
-{
-    int flag = 0;
+{ 
     if(NULL ==CameraInfos)//  camera list is not creat 
     {
          ErrorFlag = NOT_EXIST_CAMERALIST;
@@ -2263,16 +2080,10 @@ int removeCameraInfoByVol(const char *vol_path)
         {   
             pTemp = pCameraInfo->next; 
             pCameraInfo->next = pCameraInfo->next->next; 
-            free(pTemp);
-            flag = 1;
+            free(pTemp); 
         }
         pCameraInfo = pCameraInfo->next; 
-    }
-    if(0 == flag)
-    {
-        ErrorFlag = NOT_EXIST_LVM;
-        return -1;
-    }
+    } 
     return 0;
 }
 

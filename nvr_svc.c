@@ -214,7 +214,9 @@ main(int argc, char **argv)
 	pthread_t pid, pid1;
 	pthread_t pid_sstatus;
 
-
+    if(isRunning()>0)
+        exit(1);
+    
     if(initCameraInfos()<0){
         TRACE_LOG("Init CameraInofs error!");
         exit(1);

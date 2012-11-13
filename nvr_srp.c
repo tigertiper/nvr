@@ -784,4 +784,59 @@ int initCameraInfos()
      return 0;
 }
 
+int isRunning()
+{
+    pid_t pid = -1, file_pid = -1;
+    FILE *fp = NULL;
+    pid = getpid();
+    char cmd[256];
+    bzero(cmd, 256);
+    if(access(PID_FILE, 0)<0)
+    { 
+        sprintf(cmd, "%u\0", pid);
+        TRACE_LOG("Start Nvrd (pid:%u) Success! \n",pid);
+        fp = fopen(PID_FILE, "w+");
+        fputs(cmd, fp);
+        fclose(fp);
+        return 0;
+    }
+    if ((fp = fopen(PID_FILE, "r")) == NULL) 
+        
+    {
+        TRACE_LOG("Open pidfile error!");
+        return -1;
+	}
+
+    if(fgets(cmd, 255, fp) == NULL)
+    {
+        fclose(fp);
+        return -1;
+    } 
+    fclose(fp);
+    sscanf(cmd, "%u", &file_pid); 
+    sprintf(cmd, "ps -ef|awk '{print $2}'|grep %u\0", file_pid);
+    if(NULL == (fp= popen(cmd, "r")))
+    {
+        TRACE_LOG("Call popen failed!");
+        return -1;
+    }
+    else
+    { 
+        while(fgets(cmd, 255, fp) != NULL)
+        {
+            
+            sscanf(cmd, "%u", &file_pid);
+            TRACE_LOG("Start Failed! Nvrd (pid:%u) is Exist!\n",file_pid );
+            fclose(fp);
+            return 1;
+        }
+        fclose(fp); 
+        sprintf(cmd, "%u\0", pid);
+        fp = fopen(PID_FILE, "w+");
+        fputs(cmd, fp);
+        fclose(fp);
+        TRACE_LOG("Start Nvrd (pid:%u) Success! \n",pid);
+        return 0;
+    }
+}
 
