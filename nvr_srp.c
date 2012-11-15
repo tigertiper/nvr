@@ -477,30 +477,46 @@ nvrproc_creatrecvol(CREATRECVOLargs creatRecVolArgs)
 	volSize *= creatRecVolArgs.blocks;
 	//num = get_lv_name(lv,MAX_LV_NUM);
 	//if(num<=0)return -1;
-	for (i = 0; i < MAX_LV_NUM; i++) {
-		if (lv[i].length > volSize / 1024 / 1024)
-			break;
-	}
+    if('\0' == *creatRecVolArgs.volumeid)
+    {
+        for (i = 0; i < MAX_LV_NUM; i++) {
+        	if (lv[i].length > volSize / 1024 / 1024)
+        		break;
+        }
 
-	if(i == MAX_LV_NUM)
-	{
-		ErrorFlag = SPACE_NOT_EOUGH;
-		ret = -1;
-		return ret;
-	}
-	
-	ret = CreateRecordVol(lv[i].lv_name,
-			      creatRecVolArgs.name,
-			      creatRecVolArgs.alias,
-			      creatRecVolArgs.savedDays, creatRecVolArgs.delPolicy, creatRecVolArgs.encodeType, volSize / (128 * 1024 * 1024));
-	if(ret < 0)
-	{
-		TRACE_LOG( "%s create record volume error.(errno:%u)\n",creatRecVolArgs.name, ErrorFlag);
-		return ret;
-	}
-	
-	lv[i].length = get_free_vol_size(lv[i].lv_name);
-	TRACE_LOG( "%s create record vol %s successfully!\n",creatRecVolArgs.name, creatRecVolArgs.volumeid);
+        if(i == MAX_LV_NUM)
+        {
+        	ErrorFlag = SPACE_NOT_EOUGH;
+        	ret = -1;
+        	return ret;
+        }
+
+        ret = CreateRecordVol(lv[i].lv_name,
+        		      creatRecVolArgs.name,
+        		      creatRecVolArgs.alias,
+        		      creatRecVolArgs.savedDays, creatRecVolArgs.delPolicy, creatRecVolArgs.encodeType, volSize / (128 * 1024 * 1024));
+        if(ret < 0)
+        {
+        	TRACE_LOG( "%s create record volume error.(errno:%u)\n",creatRecVolArgs.name, ErrorFlag);
+        	return ret;
+        }
+
+        lv[i].length = get_free_vol_size(lv[i].lv_name);
+        TRACE_LOG( "%s create record vol %s successfully!\n",creatRecVolArgs.name, creatRecVolArgs.volumeid);
+    }
+    else
+    {
+        ret = CreateRecordVol(creatRecVolArgs.volumeid,
+		      creatRecVolArgs.name,
+		      creatRecVolArgs.alias,
+		      creatRecVolArgs.savedDays, creatRecVolArgs.delPolicy, creatRecVolArgs.encodeType, creatRecVolArgs.blocks);
+        if(ret < 0)
+        {
+        	TRACE_LOG( "%s create record volume error.(errno:%u)\n",creatRecVolArgs.name, ErrorFlag);
+        	return ret;
+        }
+        TRACE_LOG( "%s create record vol %s successfully!\n",creatRecVolArgs.name, creatRecVolArgs.volumeid);
+    }
 	return ret;
 }
 
