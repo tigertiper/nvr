@@ -1817,6 +1817,10 @@ CreateRecordVol(char *volumeid, char *name, char *alias, short savedDays, char d
 	vnode *v;
 	_sbinfo sbinfo = NULL;
 	int flag;
+    if(!read_vol_by_camera(NULL, name))//if exist same camera in list, remove it
+    {
+        removeCameraInfo(name);
+    }
 	flag = alloc_ID(volumeid, name, &sbinfo, &ID);
 	if (flag == -1)
 		goto err;
@@ -2036,7 +2040,7 @@ int read_vol_by_camera(char * vol_path, const char * cameraID)
         }
         pCameraInfo = pCameraInfo->next;        
     }
-    ErrorFlag = NOT_EXIST_CAMERA;
+    ErrorFlag = NOT_EXIST_RECORD;
     return -1;     
 }
 
@@ -2061,7 +2065,7 @@ int removeCameraInfo(const char *cameraID)
         }
         pCameraInfo = pCameraInfo->next; 
     }
-    ErrorFlag = NOT_EXIST_CAMERA;
+    ErrorFlag = NOT_EXIST_RECORD;
     return -1;
 }
 
