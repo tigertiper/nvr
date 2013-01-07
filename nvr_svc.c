@@ -210,6 +210,13 @@ sigpipeHandler(int sig)
 int
 main(int argc, char **argv)
 {
+    if(argc != 1){
+        if(!strcmp(argv[1], "-v")){
+            TRACE_LOG("************ NVRD VERSION 1.165 (2013.1.7)************\n"); 
+	        exit(0);
+        }
+    }
+    
 	register SVCXPRT *transp;
 	pthread_t pid, pid1;
 	pthread_t pid_sstatus;
@@ -265,14 +272,6 @@ main(int argc, char **argv)
 		exit(1);
 	}
 
-	
-	if (pthread_create(&pid_sstatus, NULL, watch_stream_status, NULL) != 0) {
-		fprintf(stderr, "Create watch_stream_status Thread failure.\n");
-		TRACE_LOG("[RPC]Create watch_stream_status Thread failure!*exit*");
-		exit(1);
-	}
-	pthread_detach(pid_sstatus);
-	
 	struct sigaction act;
 	act.sa_handler = sigpipeHandler;
 	sigemptyset(&act.sa_mask);

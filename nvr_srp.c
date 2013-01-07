@@ -35,54 +35,6 @@ static char readBuf[MAX_READ_SIZE];
 static char headBuf[MAX_HEADER_LENGTH];
 long long get_free_vol_size(const char *volName);
 int abc = 0;
-unsigned int
-nvrproc_create(CREATEargs createargs)
-{
-	TRACE_LOG( "Start to create %s record segment.\n", createargs.camerID);
-	unsigned int handle;
-	int i = 0;
-	seginfo sinfo;
-	sinfo.frame = 0;
-	sinfo.height = 1;
-	sinfo.width = 2;
-	sinfo.size = createargs.header.header_len;
-	strcpy(sinfo.des, createargs.describe);
-
-	handle = CreatRecordSeg(createargs.camerID, &sinfo, createargs.header.header_val, createargs.header.header_len);
-	if (handle == (unsigned int)-1)
-	{
-		TRACE_LOG( "Create %s record segment failed!(errno:%d)\n",createargs.camerID, ErrorFlag);
-		return -1;
-	}
-	i = findStreamInfo(handle);
-	if (i < 0) {
-		i = allocStreamInfo(handle);
-		if (i < 0) {
-			TRACE_LOG( "Create %s record segment failed!(errno:%d)\n",createargs.camerID, ErrorFlag);
-			return -1;
-		}
-	} else if (streamInfos[i]->isRecording) {		
-		TRACE_LOG( "Create record %s segment failed!(Camera is recording!)\n",createargs.camerID);
-		return -1;
-	}
-
-	/*initial streamInfo vars */
-	strcpy(streamInfos[i]->cameraID, createargs.camerID);
-	streamInfos[i]->BFlag = 0;
-	streamInfos[i]->isRecording = 1;
-
-	pthread_mutex_lock(&streamInfos[i]->Mutex_Buffer[streamInfos[i]->BFlag]);
-
-	if (pthread_create(&streamInfos[i]->wrThread, NULL, writeThread, (void *)streamInfos[i]) != 0) {
-		ErrorFlag = NVR_CREATWRITEDATATHREADFAIL;
-		pthread_mutex_unlock(&streamInfos[i]->Mutex_Buffer[streamInfos[i]->BFlag]);
-		TRACE_LOG( "Create %s record segment failed!(errno:%d)\n",createargs.camerID, ErrorFlag);
-		return -1;
-	}
-
-	TRACE_LOG( "Create %s record segment successfully, handle:%d!\n",createargs.camerID,  handle);
-	return handle;
-}
 
 
 unsigned int
@@ -134,6 +86,68 @@ nvrproc_close(unsigned int streamHandle)
 	}
 	TRACE_LOG( "Close %s record segment successfully, handle:%u!\n",pcameraID, streamHandle);
 	return res;
+}
+
+
+unsigned int
+nvrproc_create(CREATEargs createargs)
+{
+	TRACE_LOG( "Start to create %s record segment.\n", createargs.camerID);
+	unsigned int handle;
+	int i = 0;
+	seginfo sinfo;
+	sinfo.frame = 0;
+	sinfo.height = 1;
+	sinfo.width = 2;
+	sinfo.size = createargs.header.header_len;
+	strcpy(sinfo.des, createargs.describe);
+    
+	if((i= findStreamInfoByCID(createargs.camerID) )!= -1)
+	{ 
+        if (streamInfos[i] && streamInfos[i]->lastRecordTime && (time(NULL) - streamInfos[i]->lastRecordTime > 5)) { 
+			nvrproc_close(streamInfos[i]->handle);
+        }
+        else{
+            ErrorFlag = CAMERA_IS_RECORDING; 
+            TRACE_LOG( "Create record segment in record volume %s failed! (errno:%d)\n",createargs.camerID, ErrorFlag);
+            return -1;
+        }
+	}
+
+	handle = CreatRecordSeg(createargs.camerID, &sinfo, createargs.header.header_val, createargs.header.header_len);
+	if (handle == (unsigned int)-1)
+	{
+		TRACE_LOG( "Create %s record segment failed!(errno:%d)\n",createargs.camerID, ErrorFlag);
+		return -1;
+	}
+	i = findStreamInfo(handle);
+	if (i < 0) {
+		i = allocStreamInfo(handle);
+		if (i < 0) {
+			TRACE_LOG( "Create %s record segment failed!(errno:%d)\n",createargs.camerID, ErrorFlag);
+			return -1;
+		}
+	} else if (streamInfos[i]->isRecording) {		
+		TRACE_LOG( "Create record %s segment failed!(Camera is recording!)\n",createargs.camerID);
+		return -1;
+	}
+
+	/*initial streamInfo vars */
+	strcpy(streamInfos[i]->cameraID, createargs.camerID);
+	streamInfos[i]->BFlag = 0;
+	streamInfos[i]->isRecording = 1;
+
+	pthread_mutex_lock(&streamInfos[i]->Mutex_Buffer[streamInfos[i]->BFlag]);
+
+	if (pthread_create(&streamInfos[i]->wrThread, NULL, writeThread, (void *)streamInfos[i]) != 0) {
+		ErrorFlag = NVR_CREATWRITEDATATHREADFAIL;
+		pthread_mutex_unlock(&streamInfos[i]->Mutex_Buffer[streamInfos[i]->BFlag]);
+		TRACE_LOG( "Create %s record segment failed!(errno:%d)\n",createargs.camerID, ErrorFlag);
+		return -1;
+	}
+
+	TRACE_LOG( "Create %s record segment successfully, handle:%d!\n",createargs.camerID,  handle);
+	return handle;
 }
 
 
@@ -715,11 +729,11 @@ get_lv_name(LvInfo * lv_info, int max)
 			line[i] = '\0';
 			strcpy(lv_info[num].lv_name, "/dev/");
 			strcat(lv_info[num].lv_name, tmp);
-			lv_info[num].length = get_free_vol_size(lv_info[num].lv_name);
-            TRACE_LOG("get_lv_name():%d\t%s\t%ld\n",num,lv_info[num].lv_name,lv_info[num].length);
+			lv_info[num].length = get_free_vol_size(lv_info[num].lv_name); 
 			if (lv_info[num].length != -1)
             {         
-				num++;
+                TRACE_LOG("VedioVoL%d:\t%s\t%ld\n",num,lv_info[num].lv_name,lv_info[num].length);
+                num++;
             }
             else
             {
@@ -731,17 +745,6 @@ get_lv_name(LvInfo * lv_info, int max)
 		pclose(fp);
 	}
 	return num;
-}
-
-int watch_stream_status()
-{
-	TRACE_LOG( "Start watch_stream_status operations!\n");
-	while(1)
-	{
-		sleep(30);
-		get_stream_infos();
-	}
-	return 0;
 }
 
 int initCameraInfos()
@@ -762,22 +765,22 @@ int initCameraInfos()
             {
                 break;
             }
-            TRACE_LOG("initCameraInfos():Opening %s...\n", lv_name);
+            TRACE_LOG("Opening VedioVol %s...\n", lv_name);
             if((fd=open(lv_name, O_RDONLY))<0){
                  ErrorFlag=OPEN_FILE_ERR;
-				 TRACE_LOG("initCameraInfos():Open lv error!\n");
+				 TRACE_LOG("Opening VedioVol %s error!\n",lv_name);
                  return -1;
             }
             if((vbitmap=(char *)malloc(sizeof(char) *(MaxUsers / 8)))==NULL){
                 ErrorFlag=MALLOC_ERR;
                 close(fd);
-				TRACE_LOG("initCameraInfos():Malloc error!\n");
+				TRACE_LOG("Opening VedioVol %s error!:Malloc error!\n",lv_name);
                 return -1;
             }
             if(_read(fd, vbitmap, MaxUsers / 8, VBitmapAddr)<0){
                  close(fd);
                  free(vbitmap);
-				 TRACE_LOG("initCameraInfos():Read vbitmap error!\n");
+				 TRACE_LOG("Opening VedioVol %s error!:Read vbitmap error!\n",lv_name);
                  return -1;
             }
             count=0;
@@ -786,7 +789,7 @@ int initCameraInfos()
                       if(_read(fd,buf,Vnode_SIZE,VnodeAddr+count*Vnode_SIZE)<0){
                           close(fd);
                           free(vbitmap);
-				          TRACE_LOG("initCameraInfos():Read vode error!\n");
+				          TRACE_LOG("Opening VedioVol %s error!:Read vode error!\n",lv_name);
                           return -1;
                        }
                        buf_to_vnode(buf,&v);
@@ -830,7 +833,7 @@ int isRunning()
     } 
     fclose(fp);
     sscanf(cmd, "%u", &file_pid); 
-    sprintf(cmd, "ps -ef|awk '{print $2}'|grep %u\0", file_pid);
+    sprintf(cmd, "ps -ef|grep nvrd|awk '{print $2}'|grep %u\0", file_pid);
     if(NULL == (fp= popen(cmd, "r")))
     {
         TRACE_LOG("Call popen failed!");

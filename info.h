@@ -55,7 +55,8 @@
 #define STRING_NULL   "NULL_\0"
 //#define PARM_FILE     "./zhangke.conf"
 //#define PARM_FILE     "/opt/HTRaid/conf/camera.conf"
-#define PID_FILE "/opt/HTRaid/conf/NVRD.PID"
+#define PID_FILE "/var/lock/NVRD.PID"
+
 
 #define CONF_LEN      (VolNameLength+CNameLength+20)
 
@@ -99,6 +100,7 @@
 #define SPACE_NOT_EOUGH 10032
 #define ZERO_TNODE 10033
 #define NOT_EXIST_CAMERALIST 10034
+#define CAMERA_IS_RECORDING 10035
 
 
 

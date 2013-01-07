@@ -20,8 +20,6 @@
 #define MAXLINE 512
 #define MAX_LV_NUM 256
 
-#define STREAM_STA_FILE "/opt/HTRaid/conf/stream_status.conf"
-
 #ifndef LVINFO_
 #define LVINFO_
 typedef struct {
@@ -103,18 +101,17 @@ struct StreamInfo {
     
 /*Found the index of streamInfos by handle*/ 
 extern int findStreamInfo(unsigned int handle);	//called by record,stopRecord
-extern int allocStreamInfo(unsigned int handle);	//called by startrecord
-extern void releaseStreamInfo(StreamInfo ** si);	//called by stoprecord
+extern int findStreamInfoByCID(char* cameraID);
+extern int allocStreamInfo(unsigned int handle);	//called by startrecord
+extern void releaseStreamInfo(StreamInfo ** si);	//called by stoprecord
 void clearInactiveStreams();
-extern int initDownloadInfo(unsigned int dhandle);
-extern int findDownloadInfo(unsigned int dhandle);
-extern int releaseDownloadInfo(unsigned int dhandle);
-int writeToBuf(StreamInfo * si, char *data, int dataLen);
-int write_data(_sbinfo, vnode *, _vnodeInfo, char *, unsigned int,
+extern int initDownloadInfo(unsigned int dhandle);
+extern int findDownloadInfo(unsigned int dhandle);
+extern int releaseDownloadInfo(unsigned int dhandle);
+int writeToBuf(StreamInfo * si, char *data, int dataLen);
+int write_data(_sbinfo, vnode *, _vnodeInfo, char *, unsigned int,
 		StreamInfo *);
-void *writeThread(void *arg);
-int get_stream_infos();
+void *writeThread(void *arg); 
 
-
 #endif				/*  */
     

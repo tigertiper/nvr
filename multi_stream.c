@@ -36,6 +36,26 @@ findStreamInfo(unsigned int handle)
 	    //LOCKINFO("read unlock...");
 	    return -1;
 }
+
+int
+findStreamInfoByCID(char* cameraID) 
+{
+	int i = 0;
+	pthread_rwlock_rdlock(&SInfo_PRW);
+	for (; i < MAX_STREAMS ; i++)
+	 {
+		if (!streamInfos[i])
+			continue;
+		if (strcmp(streamInfos[i]->cameraID, cameraID) == 0 )
+		 {
+			pthread_rwlock_unlock(&SInfo_PRW);
+			return i;
+		}
+	}
+	pthread_rwlock_unlock(&SInfo_PRW);
+	return -1;
+}
+
 int
 allocStreamInfo(unsigned int handle) 
 {
@@ -155,63 +175,3 @@ releaseDownloadInfo(unsigned int dhandle)
 	pthread_rwlock_unlock(&DInfo_PRW);
 	return 0;
 }
-
-int get_stream_infos()
-{
-	int i = 0;
-	int fd = 0;
-	char buf[MAXLINE];
-	char status1[10], status2[10];
-	char* pstr;
-	strcpy(status1, "Active");
-	strcpy(status2, "InActive");
-
- 	if((fd = open(STREAM_STA_FILE, O_CREAT | O_WRONLY | O_TRUNC )) < 0)
-	{
-		perror("open file failed!");
-		return -1;
-	}
-	
-	for( i = 0; i < MAX_STREAMS; i ++)
-	{
-		pthread_rwlock_rdlock(&SInfo_PRW);
-		if(streamInfos[i])
-		{
-			bzero(buf, MAXLINE);
-			if(streamInfos[i]->lastRecordTime - (int)time(NULL) > 30)
-				pstr = status2;
-			else
-				pstr = status1;
-			sprintf(buf, "%s\tRECORD\t%s\t%u\n", streamInfos[i]->cameraID, pstr , streamInfos[i]->lastRecordTime);
-			pthread_rwlock_unlock(&SInfo_PRW);		
-			write(fd, buf, strlen(buf));
-			continue;
-		}
-		pthread_rwlock_unlock(&SInfo_PRW);		
-	}
-
-		
-	for( i = 0; i < MAX_STREAMS; i ++)
-	{
-		bzero(buf, MAXLINE);
-		pthread_rwlock_rdlock(&DInfo_PRW);
-		if(pDInfo[i])
-		{
-			bzero(buf, MAXLINE);
-			if(pDInfo[i]->lastReadTime - (int)time(NULL) > 30)
-				pstr = status2;
-			else
-				pstr = status1;
-			sprintf(buf, "%s\tDOWNLOAD\t%s\t%u\n", pDInfo[i]->CameraID, pstr , pDInfo[i]->lastReadTime);
-			pthread_rwlock_unlock(&DInfo_PRW);	
-			write(fd, buf, strlen(buf));
-			continue;
-		}
-		pthread_rwlock_unlock(&DInfo_PRW);		
-	}
-
-	close(fd);
-
-	return 0;
-}
-

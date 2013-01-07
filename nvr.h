@@ -330,10 +330,6 @@ typedef struct RECORDBYORDERres RECORDBYORDERres;
 
 #endif				/* K&R C */
 
-
-int watch_stream_status();
-
-
 #ifdef __cplusplus
 }
 #endif
