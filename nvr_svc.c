@@ -206,16 +206,29 @@ sigpipeHandler(int sig)
 	printf("OUCH! - I got signal %d\n", sig);
 }
 
+int version()
+{
+	TRACE_LOG("************ NVRD VERSION 1.165 (2013.1.8)************\n"); 
+	/*
+	1 synchronization of time index and space;
+	*/
+	return 0;
+}
 
 int
 main(int argc, char **argv)
 {
     if(argc != 1){
         if(!strcmp(argv[1], "-v")){
-            TRACE_LOG("************ NVRD VERSION 1.165 (2013.1.7)************\n"); 
+            version();
 	        exit(0);
         }
     }
+	//added by wsr 20121030
+	//open logfile
+	openlog(__FILE__, LOG_PID, LOG_LOCAL1);
+	//end
+    version();
     
 	register SVCXPRT *transp;
 	pthread_t pid, pid1;
@@ -231,11 +244,6 @@ main(int argc, char **argv)
 
     showCameraList();
     
-	//added by wsr 20121030
-	//open logfile
-	openlog(__FILE__, LOG_PID, LOG_LOCAL1);
-	//end
-	
 	pmap_unset(NVRPROG, NVRVERS);
 
 	transp = svcudp_create(RPC_ANYSOCK);

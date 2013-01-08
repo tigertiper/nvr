@@ -345,8 +345,7 @@ nvrproc_getheader(CMMNargs gethargs)
 
 SEARCHres
 nvrproc_searchrecord(SEARCHargs searchargs)
-{
-	TRACE_LOG( "%s start to search record!\n", searchargs.camerID);
+{ 
 	SEARCHres recordInfo;
 
 	seginfo si;
@@ -764,8 +763,7 @@ int initCameraInfos()
             if('\0' == *lv_name)
             {
                 break;
-            }
-            TRACE_LOG("Opening VedioVol %s...\n", lv_name);
+            } 
             if((fd=open(lv_name, O_RDONLY))<0){
                  ErrorFlag=OPEN_FILE_ERR;
 				 TRACE_LOG("Opening VedioVol %s error!\n",lv_name);
