@@ -47,7 +47,7 @@ nvrproc_close(unsigned int streamHandle)
 	i = findStreamInfo(streamHandle);
 	if (i >= 0) {		//is recording	
 		strcpy(pcameraID, streamInfos[i]->cameraID);
-		TRACE_LOG( "Start to close %s record segment, handle:%d!\n",pcameraID, streamHandle);
+		TRACE_LOG( "Start to close record segment in record volume %s, handle:%d!\n",pcameraID, streamHandle);
 		pthread_rwlock_wrlock(&streamInfos[i]->RWlock_Recording);
 		pthread_mutex_unlock(&streamInfos[i]->Mutex_Buffer[streamInfos[i]->BFlag]);
 		streamInfos[i]->isRecording = 0;
@@ -58,7 +58,7 @@ nvrproc_close(unsigned int streamHandle)
 		memcpy(streamInfos[i]->t, streamInfos[i]->vi->t, WriteLen * sizeof(tnode));
 		streamInfos[i]->vi->count = 0;
 		if ((res = CloseRecordSeg(streamHandle, streamInfos[i])) == -1) {
-			TRACE_LOG( "Close %s record segment failed, handle:%d!(errno:%u)\n",pcameraID, streamHandle, ErrorFlag);
+			TRACE_LOG( "Close record segment failed in record volume %s, handle:%d! (errno:%u)\n",pcameraID, streamHandle, ErrorFlag);
 		}
 		//  pthread_rwlock_wrlock(&streamInfos[i]->RWlock_Recording);
 		//      pthread_mutex_unlock(&streamInfos[i]->Mutex_Buffer[streamInfos[i]->BFlag]);
@@ -73,18 +73,18 @@ nvrproc_close(unsigned int streamHandle)
 		if(i < 0)
 		{
 			ErrorFlag = ERR_HANDLE;
-			TRACE_LOG( "Close record segment failed, handle:%u not exist! cancel!(errno:%u)\n", streamHandle, ErrorFlag);
+			TRACE_LOG( "Close record segment failed in record volume %s, handle:%u not exist! cancel!(errno:%u)\n", pcameraID, streamHandle, ErrorFlag);
 			return -1;
 		}
 		strcpy(pcameraID,  pDInfo[i]->CameraID);
-		TRACE_LOG( "Start to close %s record segment, handle:%u!\n",pcameraID, streamHandle);
+		TRACE_LOG( "Start to close record segment in record volume %s, handle:%u!\n",pcameraID, streamHandle);
 		res = CloseRecordSeg(streamHandle, NULL);
 		if(res < 0){
-			TRACE_LOG( "Close %s record segment failed, handle:%d!(errno:%u)\n",pcameraID, streamHandle, ErrorFlag);
+			TRACE_LOG( "Close record segment failed in record volume %s, handle:%d! (errno:%u)\n",pcameraID, streamHandle, ErrorFlag);
 		}
 		releaseDownloadInfo(streamHandle);
 	}
-	TRACE_LOG( "Close %s record segment successfully, handle:%u!\n",pcameraID, streamHandle);
+	TRACE_LOG( "Close record segment successfully in record volume %s, handle:%u!\n",pcameraID, streamHandle);
 	return res;
 }
 
@@ -92,7 +92,7 @@ nvrproc_close(unsigned int streamHandle)
 unsigned int
 nvrproc_create(CREATEargs createargs)
 {
-	TRACE_LOG( "Start to create %s record segment.\n", createargs.camerID);
+	TRACE_LOG( "Start to create record segment in record volume %s.\n", createargs.camerID);
 	unsigned int handle;
 	int i = 0;
 	seginfo sinfo;
@@ -117,18 +117,18 @@ nvrproc_create(CREATEargs createargs)
 	handle = CreatRecordSeg(createargs.camerID, &sinfo, createargs.header.header_val, createargs.header.header_len);
 	if (handle == (unsigned int)-1)
 	{
-		TRACE_LOG( "Create %s record segment failed!(errno:%d)\n",createargs.camerID, ErrorFlag);
+		TRACE_LOG( "Create record segment in record volume %s failed!(errno:%d)\n",createargs.camerID, ErrorFlag);
 		return -1;
 	}
 	i = findStreamInfo(handle);
 	if (i < 0) {
 		i = allocStreamInfo(handle);
 		if (i < 0) {
-			TRACE_LOG( "Create %s record segment failed!(errno:%d)\n",createargs.camerID, ErrorFlag);
+			TRACE_LOG( "Create record segment in record volume %s failed!(errno:%d)\n",createargs.camerID, ErrorFlag);
 			return -1;
 		}
 	} else if (streamInfos[i]->isRecording) {		
-		TRACE_LOG( "Create record %s segment failed!(Camera is recording!)\n",createargs.camerID);
+		TRACE_LOG( "Create record segment in record volume %s failed!(Camera is recording!)\n",createargs.camerID);
 		return -1;
 	}
 
@@ -142,11 +142,11 @@ nvrproc_create(CREATEargs createargs)
 	if (pthread_create(&streamInfos[i]->wrThread, NULL, writeThread, (void *)streamInfos[i]) != 0) {
 		ErrorFlag = NVR_CREATWRITEDATATHREADFAIL;
 		pthread_mutex_unlock(&streamInfos[i]->Mutex_Buffer[streamInfos[i]->BFlag]);
-		TRACE_LOG( "Create %s record segment failed!(errno:%d)\n",createargs.camerID, ErrorFlag);
+		TRACE_LOG( "Create record segment in record volume %s failed!(errno:%d)\n",createargs.camerID, ErrorFlag);
 		return -1;
 	}
 
-	TRACE_LOG( "Create %s record segment successfully, handle:%d!\n",createargs.camerID,  handle);
+	TRACE_LOG( "Create record segment in record volume %s successfully, handle:%d!\n",createargs.camerID,  handle);
 	return handle;
 }
 
@@ -166,7 +166,7 @@ nvrproc_write(WRITEargs writeargs)
 		return -1;
 	}
 	if (writeTnodeToBuf(streamInfos[i], writeargs.beginTime, writeargs.data.data_len) < 0) {
-		TRACE_LOG( "%s write error, (errno:%d).\n", streamInfos[i]->cameraID, ErrorFlag);
+		TRACE_LOG( "write error in record volume %s, (errno:%d).\n", streamInfos[i]->cameraID, ErrorFlag);
 		return -1;
 	}
 	gettimeofday(&time1, NULL);
@@ -174,7 +174,7 @@ nvrproc_write(WRITEargs writeargs)
 
 	if (writeToBuf(streamInfos[i], writeargs.data.data_val, writeargs.data.data_len) < 0) {
 		ErrorFlag = WRITE_LVM_ERR;
-		TRACE_LOG( "%s write error, (errno:%d).\n", streamInfos[i]->cameraID, ErrorFlag);
+		TRACE_LOG( "write error in record volume %s, (errno:%d).\n", streamInfos[i]->cameraID, ErrorFlag);
 		return -1;
 	}
 	streamInfos[i]->v->storeAddr += writeargs.data.data_len;
@@ -185,7 +185,7 @@ nvrproc_write(WRITEargs writeargs)
 	else
 		writeCost = (time2.tv_sec * 1000000) + time2.tv_usec - time1.tv_usec - time1.tv_sec * 1000000;
 	if (writeCost > 1000)
-		TRACE_LOG( "%s writedata cost : %10ld us\n", streamInfos[i]->cameraID,  writeCost);
+		TRACE_LOG( "write data in record volume %s cost: %10ld us\n", streamInfos[i]->cameraID,  writeCost);
 
 	//printf("... write %d bytes,time = %d ...\n",writeargs.data.data_len,writeargs.beginTime);
 	abc++;
@@ -253,14 +253,14 @@ writeThread(void *arg)
 			//注意互斥
 			ret = __write(si->vi->fd, si->RecordBuffer[si->wrFlag], si->BUsed_Size[si->wrFlag], si->wrAddr[si->wrFlag], &si->vi->mutex);
 			gettimeofday(&time1, NULL);
-			printf("_write cost %d : %10ld\n", time1.tv_sec - time.tv_sec, time1.tv_usec - time.tv_usec);
+			//printf("_write cost %d : %10ld\n", time1.tv_sec - time.tv_sec, time1.tv_usec - time.tv_usec);
 			//          printf("%ld:%d:buf[0-111]%d\n",si->wrAddr[si->wrFlag],si->BUsed_Size[si->wrFlag],si->wrFlag);
 			if (ret == -1) {
 				ErrorFlag = WRITE_LVM_ERR;
 				//pthread_rwlock_wrlock(&si->RWlock_Recording);
 				si->isRecording = 0;
 				//pthread_rwlock_unlock(&si->RWlock_Recording);
-				TRACE_LOG( "%s write error.(errno:%d)\n", si->cameraID, ErrorFlag);
+				TRACE_LOG( "write error in record volume %s..(errno:%d)\n", si->cameraID, ErrorFlag);
 			}
 			/*clear the buffer, and reset it */
 			//bzero(si->RecordBuffer[si->wrFlag], si->BUsed_Size[si->wrFlag]);
@@ -279,18 +279,18 @@ writeThread(void *arg)
 unsigned int
 nvrproc_open(CMMNargs openargs)
 {
-	TRACE_LOG( "%s start to open record segment.\n", openargs.camerID);
+	TRACE_LOG( "start to open record segment in record volume %s.\n", openargs.camerID);
 	unsigned int handle;
 	int i = 0;
 
 	handle = openRecordSeg(openargs.camerID, openargs.beginTime, openargs.endTime, openargs.mode);
 	if (handle == (unsigned int)-1) {
-		TRACE_LOG("%s open record segment error.(errno:%u).\n",openargs.camerID, ErrorFlag);
+		TRACE_LOG("open record segment error in record volume %s.(errno:%u).\n",openargs.camerID, ErrorFlag);
 		return handle;
 	}
 	if ((i = initDownloadInfo(handle)) < 0)
 	{
-		TRACE_LOG("%s open record segment error.(errno:%u).\n",openargs.camerID, ErrorFlag);
+		TRACE_LOG("open record segment error in record volume %s.(errno:%u).\n",openargs.camerID, ErrorFlag);
 		return -1;
 	}
 	//added by wsr 20121029
@@ -298,7 +298,7 @@ nvrproc_open(CMMNargs openargs)
 	strcpy(pDInfo[i]->CameraID, openargs.camerID);
 	pthread_rwlock_unlock(&DInfo_PRW);
 	//end
-	TRACE_LOG( "%s open record segment successfully, handle:%u!.\n", openargs.camerID, handle);
+	TRACE_LOG( "open record segment successfully in record volume %s, handle:%u!.\n", openargs.camerID, handle);
 	return handle;
 }
 
@@ -310,13 +310,13 @@ nvrproc_read(READargs readargs)
 	i = findDownloadInfo(readargs.playHandle);
 	if(i < 0)
 	{
-		TRACE_LOG( "%s read data error.(errno:%u).\n", pDInfo[i]->CameraID, ErrorFlag);
+		TRACE_LOG( "read data error in record volume %s.(errno:%u).\n", pDInfo[i]->CameraID, ErrorFlag);
 	}
 	readLen = ReadStream(readargs.playHandle, readBuf, readargs.readSize, readargs.mode);
 
 	//TRACE_LOG( "read %d bytes\n", readLen);
 	if (readLen < 0) {
-		TRACE_LOG( "%s read data error.(errno:%u).\n", pDInfo[i]->CameraID, ErrorFlag);
+		TRACE_LOG( "read data error in record volume %s.(errno:%u).\n", pDInfo[i]->CameraID, ErrorFlag);
 		readLen = 0;
 	}
 	readres.data.data_val = readBuf;
@@ -329,17 +329,17 @@ nvrproc_read(READargs readargs)
 HEADERinfo
 nvrproc_getheader(CMMNargs gethargs)
 {
-	TRACE_LOG( "%s start to get record header!\n", gethargs.camerID);
+	TRACE_LOG( "start to get record header of record volume %s!\n", gethargs.camerID);
 	headerInfo.nextBeginTime = _GetRecordSegHead(gethargs.camerID, &gethargs.beginTime, &gethargs.endTime, headBuf, &(headerInfo.data.data_len));
 	if(headerInfo.nextBeginTime == ERR_RETURN)
 	{
-		TRACE_LOG( "%s get record header error.(errno:%u)\n", gethargs.camerID, ErrorFlag);	
+		TRACE_LOG( "get record header of record volume %s error! (errno:%u)\n", gethargs.camerID, ErrorFlag);	
 		headerInfo.data.data_len = 0;
 	}
 	headerInfo.data.data_val = headBuf;
 	headerInfo.beginTime = gethargs.beginTime;
 	headerInfo.endTime = gethargs.endTime;
-	TRACE_LOG( "%s get record header successfully!\n", gethargs.camerID);
+	TRACE_LOG( "get record header of record volume %s successfully!\n", gethargs.camerID);
 	return headerInfo;
 }
 
@@ -347,13 +347,12 @@ SEARCHres
 nvrproc_searchrecord(SEARCHargs searchargs)
 { 
 	SEARCHres recordInfo;
-
 	seginfo si;
 	recordInfo.cmmnArgs = searchargs;
 	recordInfo.nextBeginTime = GetRecordInfo(searchargs.camerID, &searchargs.beginTime, &searchargs.endTime, &si);
 	if(headerInfo.nextBeginTime == ERR_RETURN)
 	{
-		TRACE_LOG( "%s search record error.(errno:%u)\n", searchargs.camerID, ErrorFlag);		
+		TRACE_LOG( "search record error in record volume %s!(errno:%u)\n", searchargs.camerID, ErrorFlag);		
 	}
 	recordInfo.cmmnArgs.beginTime = searchargs.beginTime;
 	recordInfo.cmmnArgs.endTime = searchargs.endTime;
@@ -361,20 +360,20 @@ nvrproc_searchrecord(SEARCHargs searchargs)
 	recordInfo.describe = si.des;
 	recordInfo.describeLen = strlen(si.des);
 	
-	TRACE_LOG( "%s search record successfully!\n", searchargs.camerID);
+	TRACE_LOG( "search record successfully in record volume %s!\n", searchargs.camerID);
 	return recordInfo;
 }
 
 RECORDBYORDERres
 nvrproc_searchrecordbyorder(RECORDBYORDERargs searchargs)
 {    
-	TRACE_LOG( "%s start to search record by order!\n", searchargs.camerID);
+	//TRACE_LOG( "%s start to search record by order!\n", searchargs.camerID);
 	RECORDBYORDERres recordInfo;
 	seginfo si;
 	recordInfo.flag=GetRecordInfoOnebyOne(searchargs.camerID, &searchargs.beginTime, &searchargs.endTime, &si, &searchargs.num);
 	if(recordInfo.flag == ERR_RETURN)
 	{
-		TRACE_LOG("%s search record by order error. (errono:%u)\n", searchargs.camerID, ErrorFlag);
+		TRACE_LOG("search record in record volume %s by order error. (errono:%u)\n", searchargs.camerID, ErrorFlag);
 	}
 	recordInfo.beginTime = searchargs.beginTime;
 	recordInfo.endTime = searchargs.endTime;
@@ -393,7 +392,7 @@ nvrproc_setrecinfo(SETRECINFOargs setrecinfoargs)
 VOLUMinfo
 nvrproc_getvolumeinfo(unsigned int camerid)
 {
-	TRACE_LOG( "%s start to get volume info!\n", camerid);
+	TRACE_LOG( "... getvolumeinfo ..., cameraID = %s\n", camerid);
 	static VOLUMinfo *voluminfo;
 	voluminfo = (VOLUMinfo *) malloc(sizeof(VOLUMinfo));
 	bzero(voluminfo, sizeof(READres));
@@ -403,15 +402,15 @@ nvrproc_getvolumeinfo(unsigned int camerid)
 unsigned int
 nvrproc_delete(DELargs delargs)
 {
-	TRACE_LOG( "%s delete record segment!\n", delargs.camerID);
+	TRACE_LOG( "delete record segment in record volume %s!\n", delargs.camerID);
 	uint32_t ret;
 	ret = DeleteRecordSeg(delargs.beginTime, delargs.endTime, delargs.camerID);
 	if(ret < 0)
 	{
-		TRACE_LOG("%s delete record segment error. (errno:%u).", delargs.camerID, ErrorFlag);
+		TRACE_LOG("delete record segment error in record volume %s. (errno:%u).", delargs.camerID, ErrorFlag);
 		return ret;
 	}
-	TRACE_LOG( "%s delete record segment successfully!\n", delargs.camerID);
+	TRACE_LOG( "delete record segment successfully in record volume %s!\n", delargs.camerID);
 	return ret;
 }
 
@@ -455,7 +454,7 @@ nvrproc_getlasterror()
 unsigned int
 nvrproc_getrecsize(GETRECSIZEargs getRecSizeArgs)
 {
-	TRACE_LOG( "%s start to get record size.\n", getRecSizeArgs.camerID);
+	TRACE_LOG( "start to get record size in record volume %s.\n", getRecSizeArgs.camerID);
 	unsigned int recordSize = 0;
 	unsigned int beginTime, endTime;
 	beginTime = getRecSizeArgs.beginTime;
@@ -463,7 +462,7 @@ nvrproc_getrecsize(GETRECSIZEargs getRecSizeArgs)
 	headerInfo.nextBeginTime = _GetRecordSegHead(getRecSizeArgs.camerID, &beginTime, &endTime, headBuf, &recordSize);
 	if (headerInfo.nextBeginTime == ERR_RETURN)
 	{
-		TRACE_LOG("%s get record size error. (errono:%u)\n", getRecSizeArgs.camerID, ErrorFlag);
+		TRACE_LOG("get record size error in record volume %s. (errono:%u)\n", getRecSizeArgs.camerID, ErrorFlag);
 		return 0;
 	}
 	if (beginTime < getRecSizeArgs.beginTime)
@@ -473,18 +472,18 @@ nvrproc_getrecsize(GETRECSIZEargs getRecSizeArgs)
 	recordSize = GetRecordSegSize(getRecSizeArgs.camerID, beginTime, endTime);
 	if (recordSize < 0)
 	{
-		TRACE_LOG("%s get record size error. (errono:%u)\n", getRecSizeArgs.camerID, ErrorFlag);
+		TRACE_LOG("get record size error in record volume %s. (errono:%u)\n", getRecSizeArgs.camerID, ErrorFlag);
 		return 0;
 	}
 	
-	TRACE_LOG( "%s get record size successfully.\n", getRecSizeArgs.camerID);
+	TRACE_LOG( "get record size successfully in record volume %s.\n", getRecSizeArgs.camerID);
 	return recordSize;
 }
 
 int
 nvrproc_creatrecvol(CREATRECVOLargs creatRecVolArgs)
 {
-	TRACE_LOG( "%s start to create record vol %s!\n",creatRecVolArgs.name, creatRecVolArgs.volumeid);
+	TRACE_LOG( "start to create record volume %s in %s!\n",creatRecVolArgs.name, creatRecVolArgs.volumeid);
 	int ret = 0, i;
 	uint64_t volSize = creatRecVolArgs.blockSize;
 	volSize *= creatRecVolArgs.blocks;
@@ -510,12 +509,12 @@ nvrproc_creatrecvol(CREATRECVOLargs creatRecVolArgs)
         		      creatRecVolArgs.savedDays, creatRecVolArgs.delPolicy, creatRecVolArgs.encodeType, volSize / (128 * 1024 * 1024));
         if(ret < 0)
         {
-        	TRACE_LOG( "%s create record volume error.(errno:%u)\n",creatRecVolArgs.name, ErrorFlag);
+        	TRACE_LOG( "create record volume %s error.(errno:%u)\n",creatRecVolArgs.name, ErrorFlag);
         	return ret;
         }
 
         lv[i].length = get_free_vol_size(lv[i].lv_name);
-        TRACE_LOG( "%s create record vol %s successfully!\n",creatRecVolArgs.name, creatRecVolArgs.volumeid);
+        TRACE_LOG( "create record volume %s in %s successfully!\n",creatRecVolArgs.name, creatRecVolArgs.volumeid);
     }
     else
     {
@@ -525,10 +524,10 @@ nvrproc_creatrecvol(CREATRECVOLargs creatRecVolArgs)
 		      creatRecVolArgs.savedDays, creatRecVolArgs.delPolicy, creatRecVolArgs.encodeType, creatRecVolArgs.blocks);
         if(ret < 0)
         {
-        	TRACE_LOG( "%s create record volume error.(errno:%u)\n",creatRecVolArgs.name, ErrorFlag);
+        	TRACE_LOG( "create record volume %s error.(errno:%u)\n",creatRecVolArgs.name, ErrorFlag);
         	return ret;
         }
-        TRACE_LOG( "%s create record vol %s successfully!\n",creatRecVolArgs.name, creatRecVolArgs.volumeid);
+        TRACE_LOG( "create record vol %s in %s successfully!\n",creatRecVolArgs.name, creatRecVolArgs.volumeid);
     }
 	return ret;
 }
@@ -536,18 +535,18 @@ nvrproc_creatrecvol(CREATRECVOLargs creatRecVolArgs)
 int
 nvrproc_delrecvol(DELRECVOLargs delRecVolArgs)
 {
-	TRACE_LOG( "%s start to delete record vol!\n", delRecVolArgs.cameraID);
+	TRACE_LOG( "start to delete record vol %s!\n", delRecVolArgs.cameraID);
 
 	int ret = 0, i;
 	ret = DeleteRecordVol(delRecVolArgs.cameraID, delRecVolArgs.mode);
 	if(ret < 0)
 	{
-		TRACE_LOG( "%s delete record volume error.(errno:%u)\n",delRecVolArgs.cameraID, ErrorFlag);
+		TRACE_LOG( "delete record volume %s error.(errno:%u)\n",delRecVolArgs.cameraID, ErrorFlag);
 		return ret;
 	}
 	for (i = 0; i < MAX_LV_NUM; i++)
 		lv[i].length = get_free_vol_size(lv[i].lv_name);
-	TRACE_LOG( "%s delete record volume successfully!\n",delRecVolArgs.cameraID);
+	TRACE_LOG( "delete record volume %s successfully!\n",delRecVolArgs.cameraID);
 	return ret;
 }
 
@@ -634,10 +633,10 @@ VolOpThread(void *arg)
 							creatMsg.alias, creatMsg.savedDays, creatMsg.delPolicy, creatMsg.encodeType, creatMsg.blocks);
 			if(resMsg.result < 0)
 			{
-				TRACE_LOG( "%s create record volume %s faile.(errno:%u).\n", creatMsg.name, creatMsg.volumeid, ErrorFlag);
+				TRACE_LOG( "create record volume %s in %s faile.(errno:%u).\n", creatMsg.name, creatMsg.volumeid, ErrorFlag);
 			}
 			if (msgsnd(sendQID, (void *)&resMsg, sizeof(int), 0) == -1) {
-				TRACE_LOG("Send msg failed, %s create record volume %s.\n", creatMsg.name, creatMsg.volumeid);
+				TRACE_LOG("Send msg failed when create record volume %s in %s.\n", creatMsg.name, creatMsg.volumeid);
 				break;
 			}
 			continue;
@@ -648,7 +647,7 @@ VolOpThread(void *arg)
 			resMsg.result = DeleteRecordVol(delMsg.cameraID, delMsg.mode);
 			if (msgsnd(sendQID, (void *)&resMsg, sizeof(int), 0) == -1) {
 				fprintf(stderr, "send msg failed\n");
-				TRACE_LOG("Send msg failed, %s delete record volume.\n", delMsg.cameraID);
+				TRACE_LOG("Send msg failed when delete record volume %s.\n", delMsg.cameraID);
 				break;
 			}
 			continue;
@@ -659,7 +658,7 @@ VolOpThread(void *arg)
 			resMsg.result = DeleteVideoVol(delVideoMsg.volName);
 			if (msgsnd(sendQID, (void *)&resMsg, sizeof(int), 0) == -1) {
 				fprintf(stderr, "send msg failed\n");
-				TRACE_LOG("Send msg failed, %s delete video volume.\n", delVideoMsg.volName);
+				TRACE_LOG("Send msg failed when delete video volume %s.\n", delVideoMsg.volName);
 				break;
 			}
 			continue;
@@ -772,13 +771,13 @@ int initCameraInfos()
             if((vbitmap=(char *)malloc(sizeof(char) *(MaxUsers / 8)))==NULL){
                 ErrorFlag=MALLOC_ERR;
                 close(fd);
-				TRACE_LOG("Opening VedioVol %s error!:Malloc error!\n",lv_name);
+				TRACE_LOG("Malloc error!\n");
                 return -1;
             }
             if(_read(fd, vbitmap, MaxUsers / 8, VBitmapAddr)<0){
                  close(fd);
                  free(vbitmap);
-				 TRACE_LOG("Opening VedioVol %s error!:Read vbitmap error!\n",lv_name);
+				 TRACE_LOG("Read vbitmap error!\n");
                  return -1;
             }
             count=0;
@@ -787,7 +786,7 @@ int initCameraInfos()
                       if(_read(fd,buf,Vnode_SIZE,VnodeAddr+count*Vnode_SIZE)<0){
                           close(fd);
                           free(vbitmap);
-				          TRACE_LOG("Opening VedioVol %s error!:Read vode error!\n",lv_name);
+				          TRACE_LOG("Read vode error!\n");
                           return -1;
                        }
                        buf_to_vnode(buf,&v);
