@@ -208,7 +208,7 @@ sigpipeHandler(int sig)
 
 int version()
 {
-	TRACE_LOG("************ NVRD VERSION 1.165 (2013.1.11)************\n"); 
+	TRACE_LOG("************ NVRD VERSION 1.165 (2013.1.26)************\n"); 
 	/*
 	1 synchronization of time index and space;
 	*/

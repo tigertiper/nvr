@@ -1460,6 +1460,26 @@ DeleteRecordPara(const char *cameraid, uint32_t beginTime, uint32_t endTime)
 
 
 
+uint32_t
+findOriginTime(vnode * v, int fd)
+{ 
+    long long offset;
+    tnode originTnode;  
+    
+    if(v->count == 2){
+            offset = v->firstIndex - FISTTIMESIZE * Tnode_SIZE + v->wr_count* sizeof(tnode);
+    }
+    else{
+            offset = v->firstIndex - FISTTIMESIZE * Tnode_SIZE;
+    }               
+    if (_read(fd, (char*)&originTnode, sizeof(tnode), offset) < 0) {
+		ErrorFlag = READ_LVM_ERR;
+		return ERR_RETURN;
+	}
+    
+    return originTnode.time;
+}
+
 
 uint32_t
 GetRecordInfo(const char *cameraid, uint32_t * pStartTime, uint32_t * pEndTime, seginfo * si)
@@ -1474,6 +1494,7 @@ GetRecordInfo(const char *cameraid, uint32_t * pStartTime, uint32_t * pEndTime, 
 	//分析handle
 	int handle;
 	char buf[16 * 1024];
+    uint32_t origin_time;
 	handle = get_dev_ID(cameraid, &sbinfo);
 	if (handle == -1)
 		return -1;
@@ -1486,13 +1507,31 @@ GetRecordInfo(const char *cameraid, uint32_t * pStartTime, uint32_t * pEndTime, 
 	}
 	pthread_mutex_unlock(&sbinfo->mutex);
 	v = (vnode *) (sbinfo->vnodeTable + ID * sizeof(vnode));
-	return_time = find_snode(sbinfo, v, fd, buf, *pStartTime, *pEndTime, &n, NULL, &sIndex);
+
+    origin_time = findOriginTime(v, fd);
+    if(origin_time == ERR_RETURN)
+        goto err1;
+    if(*pEndTime < origin_time) {
+        ErrorFlag = TIME_ERR;
+        goto err1;
+    } 
+    if(*pStartTime < origin_time) {
+        return_time = find_snode(sbinfo, v, fd, buf, origin_time, *pEndTime, &n, NULL, &sIndex);
+        if (return_time == origin_time)
+            return_time = *pStartTime;
+    }
+    else {
+        return_time = find_snode(sbinfo, v, fd, buf, *pStartTime, *pEndTime, &n, NULL, &sIndex);
+    }
 	if (*pStartTime < sIndex.start_time)
 		*pStartTime = sIndex.start_time;
+    if (*pStartTime < origin_time)
+        *pStartTime = origin_time;
 	if (*pEndTime > sIndex.end_time)
 		*pEndTime = sIndex.end_time;
-	if (return_time == ERR_RETURN)
-		goto err1;
+    if (return_time == ERR_RETURN)
+        goto err1; 
+    
 	addr = v->firstIndex - 1024 * SEGINFO_SIZE - FISTTIMESIZE * Tnode_SIZE + n * SEGINFO_SIZE;
 	//通过录像段头找到录像段的长度。
 	if (_read(fd, buf, DSI_SIZE, addr) < 0) {
@@ -1522,6 +1561,7 @@ GetRecordInfoOnebyOne(const char *cameraid, uint32_t * pStartTime, uint32_t * pE
 	//����handle
 	int handle;
 	char buf[16 * 1024];
+    uint32_t origin_time;
 	handle = get_dev_ID(cameraid, &sbinfo);
 	if (handle == -1)
 		return ERR_RETURN;
@@ -1556,6 +1596,18 @@ GetRecordInfoOnebyOne(const char *cameraid, uint32_t * pStartTime, uint32_t * pE
     }
     *pStartTime = sIndex->start_time;
     *pEndTime = sIndex->end_time;
+
+    origin_time = findOriginTime(v, fd);
+    if(origin_time == ERR_RETURN)
+        goto err;
+    if(*pEndTime < origin_time) {
+        close(fd);
+        return 1;
+    }
+    if(*pStartTime < origin_time){
+        *pStartTime = origin_time;
+    }
+    
     addr = v->firstIndex - 1024 * SEGINFO_SIZE - FISTTIMESIZE * Tnode_SIZE + (*n) * SEGINFO_SIZE;
  	if (_read(fd, buf, DSI_SIZE, addr) < 0) {
 		ErrorFlag = READ_LVM_ERR;
@@ -1565,6 +1617,9 @@ GetRecordInfoOnebyOne(const char *cameraid, uint32_t * pStartTime, uint32_t * pE
 	buf_to_DSI(buf, si);      
     close(fd);    
     return 0;
+     err:
+     close(fd);
+     return ERR_RETURN;
 }
 
 
@@ -1626,8 +1681,18 @@ GetRecordSegSize(const char *cameraid, uint32_t StartTime, uint32_t EndTime)
 		count = h + i - j;
 	else
 		count = h - j;
-	if (count == 0 && addr3 <= addr4) {
-		size = addr4 - addr3;
+	if (count == 0) {
+        if(addr3 <= addr4)
+		    size = addr4 - addr3;
+        else {
+            k = j;
+			if (k == 0)
+				addr1 = v->block[k][0] * (sbinfo->_es->blockSize) + DataAddr + DataAddr1;
+			else
+				addr1 = v->block[k][0] * (sbinfo->_es->blockSize) + DataAddr;
+			addr2 = v->block[k][1] * (sbinfo->_es->blockSize) + DataAddr;
+            size = (addr2-addr3) + (addr4-addr1);
+        }
 	} else {
 		k = j;
 		for (; count >= 0; count--) {
