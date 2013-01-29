@@ -33,8 +33,7 @@ static HEADERinfo headerInfo;
 //static SEARCHres recordInfo;
 static char readBuf[MAX_READ_SIZE];
 static char headBuf[MAX_HEADER_LENGTH];
-long long get_free_vol_size(const char *volName);
-int abc = 0;
+long long get_free_vol_size(const char *volName); 
 
 
 unsigned int
@@ -187,8 +186,7 @@ nvrproc_write(WRITEargs writeargs)
 	if (writeCost > 1000)
 		TRACE_LOG( "write data in record volume %s cost: %10ld us\n", streamInfos[i]->cameraID,  writeCost);
 
-	//printf("... write %d bytes,time = %d ...\n",writeargs.data.data_len,writeargs.beginTime);
-	abc++;
+	//printf("... write %d bytes,time = %d ...\n",writeargs.data.data_len,writeargs.beginTime); 
 	return writeargs.data.data_len;
 }
 
@@ -360,7 +358,7 @@ nvrproc_searchrecord(SEARCHargs searchargs)
 	recordInfo.describe = si.des;
 	recordInfo.describeLen = strlen(si.des);
 	
-	TRACE_LOG( "search record successfully in record volume %s!\n", searchargs.camerID);
+	//TRACE_LOG( "search record successfully in record volume %s!\n", searchargs.camerID);
 	return recordInfo;
 }
 

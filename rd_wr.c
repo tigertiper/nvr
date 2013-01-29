@@ -598,7 +598,7 @@ writeTnodeToBuf(StreamInfo * si, uint32_t startTime, int size)
 	   } */
 	if (si->vi->count >= WriteLen) {	//
 		memcpy(si->t, si->vi->t, WriteLen * sizeof(tnode));
-		printf("::%d\n", si->vi->t[0].time);
+		//printf("::%d\n", si->vi->t[0].time);
 		si->count = si->vi->count;
 		si->vi->count = 0;
 		/*
@@ -1552,7 +1552,7 @@ GetRecordInfo(const char *cameraid, uint32_t * pStartTime, uint32_t * pEndTime, 
 uint32_t
 GetRecordInfoOnebyOne(const char *cameraid, uint32_t * pStartTime, uint32_t * pEndTime, seginfo * si, int *n)
 {
-	int ID, fd,len;
+	int ID, fd,len,m;
 	vnode *v;
 	// _vnodeInfo vi; 
 	uint64_t addr;
@@ -1577,8 +1577,10 @@ GetRecordInfoOnebyOne(const char *cameraid, uint32_t * pStartTime, uint32_t * pE
     addr = v->block[0][0] * (sbinfo->_es->blockSize) + DataAddr;	//找到snode的起始地址
 	if (v->SnodeRecycle == ISRecycled) {
 		len = 1024;	//如果snode的空间已经覆盖
+		m = (*n + (v->curSnode - addr) / SEG_SIZE)%1024;
 	} else {
 		len = (v->curSnode - addr) / SEG_SIZE;
+        m = *n;
 	}
     if(*n > len -1){
         close(fd);
@@ -1589,7 +1591,7 @@ GetRecordInfoOnebyOne(const char *cameraid, uint32_t * pStartTime, uint32_t * pE
         close(fd);
 		return ERR_RETURN;
 	}
-    sIndex = (segindex *) (buf + (*n) * SEG_SIZE); //
+    sIndex = (segindex *) (buf + m * SEG_SIZE); //
     if(sIndex->start_time == 0){
         close(fd);
         return 1;
@@ -1608,7 +1610,7 @@ GetRecordInfoOnebyOne(const char *cameraid, uint32_t * pStartTime, uint32_t * pE
         *pStartTime = origin_time;
     }
     
-    addr = v->firstIndex - 1024 * SEGINFO_SIZE - FISTTIMESIZE * Tnode_SIZE + (*n) * SEGINFO_SIZE;
+    addr = v->firstIndex - 1024 * SEGINFO_SIZE - FISTTIMESIZE * Tnode_SIZE + m * SEGINFO_SIZE;
  	if (_read(fd, buf, DSI_SIZE, addr) < 0) {
 		ErrorFlag = READ_LVM_ERR;
         close(fd);
