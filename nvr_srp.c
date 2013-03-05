@@ -102,8 +102,8 @@ nvrproc_create(CREATEargs createargs)
 	strcpy(sinfo.des, createargs.describe);
     
 	if((i= findStreamInfoByCID(createargs.camerID) )!= -1)
-	{ 
-        if (streamInfos[i] && streamInfos[i]->lastRecordTime && (time(NULL) - streamInfos[i]->lastRecordTime > 5)) { 
+	{
+        if (streamInfos[i] && streamInfos[i]->lastRecordTime && ((time(NULL) - streamInfos[i]->lastRecordTime) > 10)) { 
 			nvrproc_close(streamInfos[i]->handle);
         }
         else{
@@ -496,7 +496,7 @@ nvrproc_creatrecvol(CREATRECVOLargs creatRecVolArgs)
 
         if(i == MAX_LV_NUM)
         {
-        	ErrorFlag = SPACE_NOT_EOUGH;
+        	ErrorFlag = SPACE_NOT_ENOUGH;
         	ret = -1;
         	return ret;
         }
@@ -559,7 +559,7 @@ clearInactiveStreams()
 	for (; i < MAX_STREAMS; i++) {
 		pthread_rwlock_rdlock(&SInfo_PRW);
 		//note: while nothing to write,how to close
-		if (streamInfos[i] && streamInfos[i]->lastRecordTime && (curTime - streamInfos[i]->lastRecordTime > 120)) {
+		if (streamInfos[i] && streamInfos[i]->lastRecordTime && ((curTime - streamInfos[i]->lastRecordTime) > 120)) {
 			TRACE_LOG("Close record stream%s:%u!\n", streamInfos[i]->cameraID, streamInfos[i]->handle);
 			pthread_rwlock_unlock(&SInfo_PRW);
 			nvrproc_close(streamInfos[i]->handle);
@@ -752,6 +752,7 @@ int initCameraInfos()
      char buf[Vnode_SIZE];
      vnode v;
      const char *lv_name;
+     removeCameraList();
      if(creatCameraList()<0)
         return -1;
      get_lv_name (lv, MAX_LV_NUM);  

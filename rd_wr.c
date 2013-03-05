@@ -1743,6 +1743,7 @@ int
 alloc_blocks_for_vnode(_sbinfo sbinfo, unsigned long long blocks, vnode * v)
 {				//blocks为需要分配的块数，为vnode分配数据块
 	if (!is_allow_alloc(sbinfo, blocks)) {
+        ErrorFlag = SPACE_NOT_ENOUGH;
 		goto err;
 	}			//end if(!is_allow_alloc(sbinfo,blocks))
 	//
@@ -1884,9 +1885,15 @@ CreateRecordVol(char *volumeid, char *name, char *alias, short savedDays, char d
 	vnode *v;
 	_sbinfo sbinfo = NULL;
 	int flag;
+	if(initCameraInfos()<0){
+        TRACE_LOG("Init CameraInofs error!");
+        return -1;
+    }
     if(!read_vol_by_camera(NULL, name))//if exist same camera in list, remove it
     {
-        removeCameraInfo(name);
+        ErrorFlag = EXIST_SAME_NAME;
+        goto err;
+        //removeCameraInfo(name);
     }
 	flag = alloc_ID(volumeid, name, &sbinfo, &ID);
 	if (flag == -1)
@@ -1928,6 +1935,10 @@ DeleteRecordVol(const char *cameraid, int mode)
 	_vnodeInfo vi;
 	//seginfo * seg;
 	TRACE_LOG("Delete RecordVol...");
+    if(initCameraInfos()<0){
+        TRACE_LOG("Init CameraInofs error!");
+        return -1;
+    }
 	handle = get_dev_ID(cameraid, &sbinfo);
 	if (handle == -1)
 		return -1;
@@ -1970,6 +1981,10 @@ DeleteVideoVol(const char *vol_path)
 	int m, handle, flag = 0;
 	_vnodeInfo vi;
 	//seginfo * seg;
+	if(initCameraInfos()<0){
+        TRACE_LOG("Init CameraInofs error!");
+        return -1;
+    }
 	if (!spin_rdlock(sbTable.spin)) {	//?????
 		for (handle = 0; handle < LvmCount; handle++) {
 			sbinfo = sbTable.table[handle];
@@ -2045,6 +2060,18 @@ int creatCameraList()//creat camera list
     bzero(CameraInfos->CameraID, CAMERAIDLEN);
     bzero(CameraInfos->lv_name,VolNameLength);
     CameraInfos->next = NULL;
+    return 0;
+}
+
+int removeCameraList()
+{
+    CameraInfo* p = NULL;
+    while(CameraInfos != NULL ) 
+    {
+        p = CameraInfos;
+        CameraInfos = CameraInfos->next;
+        free(p);
+    }
     return 0;
 }
 
