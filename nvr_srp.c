@@ -485,7 +485,8 @@ nvrproc_creatrecvol(CREATRECVOLargs creatRecVolArgs)
 	int ret = 0, i;
 	uint64_t volSize = creatRecVolArgs.blockSize;
 	volSize *= creatRecVolArgs.blocks;
-	//num = get_lv_name(lv,MAX_LV_NUM);
+    bzero(lv, MAX_LV_NUM*sizeof(LvInfo));
+	get_lv_name(lv,MAX_LV_NUM);
 	//if(num<=0)return -1;
     if('\0' == *creatRecVolArgs.volumeid)
     {
