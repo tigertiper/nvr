@@ -208,7 +208,7 @@ sigpipeHandler(int sig)
 
 int version()
 {
-	TRACE_LOG("************ NVRD VERSION 1.165 (2013.3.27)************\n"); 
+	TRACE_LOG("************ NVRD VERSION 1.165 (2013.4.24)************\n"); 
 	/*
 	1 synchronization of time index and space;
 	*/
@@ -231,8 +231,9 @@ main(int argc, char **argv)
     version();
     
 	register SVCXPRT *transp;
-	pthread_t pid, pid1;
+	pthread_t pid, pid1,pid2;
 	pthread_t pid_sstatus;
+    int listenfd;
 
     if(isRunning()>0)
         exit(1);
@@ -280,6 +281,25 @@ main(int argc, char **argv)
 		exit(1);
 	}
 
+    listenfd = tcp_create();
+    if (listenfd < 0) {
+        TRACE(DEBUG_DETAIL, "TCP creat failed!\n");  
+        exit(1);
+    }
+    
+	if (pthread_create(&pid2, NULL, TcpPollThread, (void*)listenfd) != 0) {
+		fprintf(stderr, "Create TcpPollThread failure.\n");
+		TRACE_LOG("[TCP]Create TcpPollThread failure!*exit*");
+		exit(1);
+	}
+
+
+/*
+	if (pthread_create(&pid2, NULL, listen_request_thread, (void*)listenfd) != 0) { 
+		TRACE_LOG("[TCP]Create do_client_thread failure!*exit*");
+		exit(1);
+	} 
+*/    
 	struct sigaction act;
 	act.sa_handler = sigpipeHandler;
 	sigemptyset(&act.sa_mask);

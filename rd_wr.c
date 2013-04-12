@@ -18,6 +18,9 @@ unsigned long long InitFlag = 0;
 
 CameraInfo* CameraInfos = NULL; 
 
+unsigned int ErrorFlag;
+
+
 //#define RandBase 200*1024     //for test
 
 
@@ -474,11 +477,11 @@ space_enough(_sbinfo sbinfo, vnode * v, int size, int *n)
 				} else
 					v->storeAddr = v->block[i][0] * (sbinfo->_es->blockSize) + DataAddr;
 				//size=size-(addr2-v->storeAddr);///////
-			}
+			} 
 			return size;
 		}
 	}
-	// _Debug("not enough space!\n",__LINE__,__FILE__);
+	// _Debug("not enough space!\n",__LINE__,__FILE__); 
 	return 0;
 }
 
@@ -579,8 +582,11 @@ writeTnodeToBuf(StreamInfo * si, uint32_t startTime, int size)
 		if (write_snode(si->sbinfo, si->v, si->vi, startTime, startTime + 1, 0) < 0)
 			goto err;
 	}
-	if ((size = space_enough(si->sbinfo, si->v, size, &n)) == 0)
-		return -1;
+	if ((size = space_enough(si->sbinfo, si->v, size, &n)) == 0) {
+        ErrorFlag = SPACE_NOT_ENOUGH;
+        return -1;
+    }
+		
 	if (si->vi->count < TimeBuffSize) {
 		si->vi->t[si->vi->count].time = startTime;
 		si->vi->t[si->vi->count].addr = si->v->storeAddr;
@@ -606,7 +612,7 @@ writeTnodeToBuf(StreamInfo * si, uint32_t startTime, int size)
 		   if(put_vnode(si->sbinfo,si->v,NULL,si->ID)<0) goto err ; */
 	}			//if(si->vi->count%WriteLen==0)???
 	return 0;
-      err:
+      err: 
 	return -1;
 }
 

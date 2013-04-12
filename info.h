@@ -290,7 +290,7 @@ extern int spin_tryrdlock(pthread_rwlock_t spinlock);
 */
 
 
-extern unsigned long long ErrorFlag;
+extern unsigned int ErrorFlag;
 extern int buf_hash(char *name, int len);
 extern void _Debug(char *s, int line, char *file);
 extern int _read(int fd, char *buf, int size, long long offset);

@@ -19,40 +19,50 @@ extern "C" {
 #define CMN_LEN 20
 #define IPLEN 64
 #define userNameLEN 256
-#define pwdLen 256
+#define pwdLen 256 
 
-    struct LOGINargs {
-	char *ip;
-	int port;
-	char *userName;
-	char *pwd;
-    };
-    typedef struct LOGINargs LOGINargs;
 
-    struct CMMNargs {
-	u_int loginID;
-	char *camerID;
-	int recordType;
-	u_int beginTime;
-	u_int endTime;
-	u_int mode;
-    };
-    typedef struct CMMNargs CMMNargs;
 
-    struct READargs {
-	u_int playHandle;
-	u_int readSize;
-	u_int mode;
-    };
-    typedef struct READargs READargs;
+#define OPEN_MAX 256
 
-    typedef CMMNargs SEARCHargs;
 
-  struct RECORDBYORDERargs {
-	u_int num;
-	char *camerID;
-	u_int beginTime;
-	u_int endTime;
+
+typedef unsigned int u_int;
+typedef unsigned long u_long;
+typedef unsigned long long u_long_long;
+
+struct LOGINargs {
+    char *ip;
+    int port;
+    char *userName;
+    char *pwd;
+};
+typedef struct LOGINargs LOGINargs;
+
+struct CMMNargs {
+    u_int loginID;
+    char *camerID;
+    int recordType;
+    u_int beginTime;
+    u_int endTime;
+    u_int mode;
+};
+typedef struct CMMNargs CMMNargs;
+
+struct READargs {
+    u_int playHandle;
+    u_int readSize;
+    u_int mode;
+};
+typedef struct READargs READargs;
+
+typedef CMMNargs SEARCHargs;
+
+struct RECORDBYORDERargs {
+    u_int num;
+    char *camerID;
+    u_int beginTime;
+    u_int endTime;
 };
 typedef struct RECORDBYORDERargs RECORDBYORDERargs;
 
@@ -65,101 +75,101 @@ struct RECORDBYORDERres {
 };
 typedef struct RECORDBYORDERres RECORDBYORDERres;
 
-    struct READres {
-	u_int dataLen;
-	struct {
-	    u_int data_len;
-	    char *data_val;
-	} data;
-    };
-    typedef struct READres READres;
+struct READres {
+u_int dataLen;
+struct {
+    u_int data_len;
+    char *data_val;
+} data;
+};
+typedef struct READres READres;
 
-    struct HEADERinfo {
-	struct {
-	    u_int data_len;
-	    char *data_val;
-	} data;
-	u_int beginTime;
-	u_int endTime;
-	u_int nextBeginTime;
-	u_int recordSize;
-    };
-    typedef struct HEADERinfo HEADERinfo;
+struct HEADERinfo {
+struct {
+    u_int data_len;
+    char *data_val;
+} data;
+u_int beginTime;
+u_int endTime;
+u_int nextBeginTime;
+u_int recordSize;
+};
+typedef struct HEADERinfo HEADERinfo;
 
-    struct SEARCHres {
-	struct CMMNargs cmmnArgs;
-	char *describe;
-	int describeLen;
-	u_int nextBeginTime;
-    };
-    typedef struct SEARCHres SEARCHres;
+struct SEARCHres {
+struct CMMNargs cmmnArgs;
+char *describe;
+int describeLen;
+u_int nextBeginTime;
+};
+typedef struct SEARCHres SEARCHres;
 
-    struct CREATEargs {
-	u_int loginID;
-	char *camerID;
-	char *camerAlias;
-	int recordType;
-	struct {
-	    u_int header_len;
-	    char *header_val;
-	} header;
-	char *describe;
-	int describeLen;
-    };
-    typedef struct CREATEargs CREATEargs;
+struct CREATEargs {
+u_int loginID;
+char *camerID;
+char *camerAlias;
+int recordType;
+struct {
+    u_int header_len;
+    char *header_val;
+} header;
+char *describe;
+int describeLen;
+};
+typedef struct CREATEargs CREATEargs;
 
-    struct WRITEargs {
-	u_int recordHandle;
-	u_int beginTime;
-	struct {
-	    u_int data_len;
-	    char *data_val;
-	} data;
-    };
-    typedef struct WRITEargs WRITEargs;
+struct WRITEargs {
+    u_int recordHandle;
+    u_int beginTime;
+    struct {
+        u_int data_len;
+        char *data_val;
+    } data;
+};
+typedef struct WRITEargs WRITEargs;
 
-    typedef CMMNargs DELargs;
+typedef CMMNargs DELargs;
 
-    struct VOLUMinfo {
-	u_int volSizeHigh;
-	u_int volSizeLow;
-	u_int usedSizeHigh;
-	u_int usedSizeLow;
-	int savedDays;
-	int delPolicy;
-	int encoderType;
-	int resolusion;
-	int datarate;
-    };
-    typedef struct VOLUMinfo VOLUMinfo;
+struct VOLUMinfo {
+    u_int volSizeHigh;
+    u_int volSizeLow;
+    u_int usedSizeHigh;
+    u_int usedSizeLow;
+    int savedDays;
+    int delPolicy;
+    int encoderType;
+    int resolusion;
+    int datarate;
+};
+typedef struct VOLUMinfo VOLUMinfo;
 
-    typedef SEARCHres SETRECINFOargs;
+typedef SEARCHres SETRECINFOargs;
 
-    struct GETRECSIZEargs {
-	char *camerID;
-	u_int beginTime;
-	u_int endTime;
-    };
-    typedef struct GETRECSIZEargs GETRECSIZEargs;
+struct GETRECSIZEargs {
+    char *camerID;
+    u_int beginTime;
+    u_int endTime;
+};
+typedef struct GETRECSIZEargs GETRECSIZEargs;
 
-    struct CREATRECVOLargs {
-	char *volumeid;
-	char *name;
-	char *alias;
-	short savedDays;
-	char delPolicy;
-	char encodeType;
-	u_int blocks;
-	u_int blockSize;
-    };
-    typedef struct CREATRECVOLargs CREATRECVOLargs;
+struct CREATRECVOLargs {
+    char *volumeid;
+    char *name;
+    char *alias;
+    short savedDays;
+    char delPolicy;
+    char encodeType;
+    u_int blocks;
+    u_int blockSize;
+};
+typedef struct CREATRECVOLargs CREATRECVOLargs;
 
-    struct DELRECVOLargs {
-	char *cameraID;
-	int mode;
-    };
-    typedef struct DELRECVOLargs DELRECVOLargs;
-
+struct DELRECVOLargs {
+char *cameraID;
+int mode;
+};
+typedef struct DELRECVOLargs DELRECVOLargs;
+   
 #define NVRPROG 0x30090949
 #define NVRVERS 1
 
@@ -224,8 +234,11 @@ typedef struct RECORDBYORDERres RECORDBYORDERres;
 	extern RECORDBYORDERres* nvrproc_searchrecordbyorder_1_svc(RECORDBYORDERargs*,   struct svc_req *);
 	
     extern int nvrprog_1_freeresult(SVCXPRT *, xdrproc_t, caddr_t);
+    extern int tcp_create();
+    extern void *listen_request_thread(void *args);
     extern void *VolOpThread(void *);
     extern void *WriteTnodeThread(void *);
+    extern void *TcpPollThread(void *);
     extern int initCameraInfos();
 
 #else				/* K&R C */

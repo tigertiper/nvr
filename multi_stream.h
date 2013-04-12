@@ -19,6 +19,8 @@
 #define MAX_READ_SIZE 5*1024*1024
 #define MAXLINE 512
 #define MAX_LV_NUM 256
+#define MAX_RECORD_DATA_SIZE (1024*1024)    //the bytes of a unit of write data 
+
 
 #ifndef LVINFO_
 #define LVINFO_
@@ -53,6 +55,10 @@ struct StreamInfo {
 	pthread_rwlock_t RWlock_Recording;
 	int isRecording;		//represent the status of record operation
 	pthread_t wrThread;
+	unsigned int writeTime;
+	unsigned int writeDataLen;
+	char writeData[STREAM_BUFFER_SIZE];
+
 };
 typedef struct StreamInfo StreamInfo;
 

@@ -17,8 +17,7 @@
 #define _FILE_OFFSET_BITS 64
 
 #define address_of_pointer(x) (long)((void*)x)
-#define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
-unsigned long long ErrorFlag = 0;
+#define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER) 
 SBTable sbTable;
 void
 sb_to_buf(char *buf, SBlock * sb)
@@ -528,21 +527,29 @@ delete_vi(_sbinfo sbinfo, vnode * v, char mode, int key)
 	_vnodeInfo vi, p;
 	while (spin_wrlock(v->spin));
 	if (mode == WriteRECORD) {
-		for (vi = v->_bf, p = vi; vi; p = vi, vi = vi->next)
-			if (vi->status == WriteRECORD)
-				break;
+        vi = v->_bf;
+        while(vi) {
+            if (vi->status == WriteRECORD)
+			    break;
+            p = vi;
+            vi = vi->next;
+        }            
 	}			//end if(mode==WriteRECORD){????
 	else {
-		for (vi = v->_bf, p = vi; vi; p = vi, vi = vi->next)
-			if (vi->status == ReadRECORD && vi->key == key)
-				break;
+        vi = v->_bf;
+        while(vi) {
+            if (vi->status == ReadRECORD && vi->key == key)
+			    break;
+            p = vi;
+            vi = vi->next;
+        }     
 	}			//end else??
 	if (!vi) {
 		spin_rwunlock(v->spin);
 		return -1;
 	}
-	if (p == vi)
-		v->_bf = NULL;
+    if(vi == v->_bf)
+        v->_bf = vi->next;
 	else
 		p->next = vi->next;
 	spin_rwunlock(v->spin);

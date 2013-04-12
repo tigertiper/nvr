@@ -9,14 +9,21 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <poll.h> 
+#include <netinet/in.h>
+#include <sys/ioctl.h>
 #include <time.h>
 #include <sys/time.h>
 #include "nvr.h"
 #include "Debug.h"
 #include "rd_wr.h"
 #include "multi_stream.h"
+ 
 
 #define PRC_SVC
+#define SERV_PORT 8000 
+#define REC_HEAD_SIZE 14 
+#define REC_RESULT_SIZE 10
 
 extern pthread_rwlock_t DInfo_PRW;
 extern char ClientIP[IPLEN];
@@ -28,7 +35,7 @@ int trace_enter_count = 0;
 extern pthread_rwlock_t SInfo_PRW;
 
 static int retcode;
-static READres readres;
+static READres readres; 
 static HEADERinfo headerInfo;
 //static SEARCHres recordInfo;
 static char readBuf[MAX_READ_SIZE];
@@ -46,7 +53,7 @@ nvrproc_close(unsigned int streamHandle)
 	i = findStreamInfo(streamHandle);
 	if (i >= 0) {		//is recording	
 		strcpy(pcameraID, streamInfos[i]->cameraID);
-		TRACE_LOG( "Start to close record segment in record volume %s, handle:%d!\n",pcameraID, streamHandle);
+		TRACE_LOG( "Start to close record segment in record volume %s, handle:0x%x!\n",pcameraID, streamHandle);
 		pthread_rwlock_wrlock(&streamInfos[i]->RWlock_Recording);
 		pthread_mutex_unlock(&streamInfos[i]->Mutex_Buffer[streamInfos[i]->BFlag]);
 		streamInfos[i]->isRecording = 0;
@@ -57,14 +64,8 @@ nvrproc_close(unsigned int streamHandle)
 		memcpy(streamInfos[i]->t, streamInfos[i]->vi->t, WriteLen * sizeof(tnode));
 		streamInfos[i]->vi->count = 0;
 		if ((res = CloseRecordSeg(streamHandle, streamInfos[i])) == -1) {
-			TRACE_LOG( "Close record segment failed in record volume %s, handle:%d! (errno:%u)\n",pcameraID, streamHandle, ErrorFlag);
-		}
-		//  pthread_rwlock_wrlock(&streamInfos[i]->RWlock_Recording);
-		//      pthread_mutex_unlock(&streamInfos[i]->Mutex_Buffer[streamInfos[i]->BFlag]);
-		//      streamInfos[i]->isRecording = 0;
-		//      pthread_rwlock_unlock(&streamInfos[i]->RWlock_Recording);
-		// waiting for the end of send_thread
-		//      pthread_join(streamInfos[i]->wrThread , NULL);
+			TRACE_LOG( "Close record segment failed in record volume %s, handle:0x%x! (errno:%u)\n",pcameraID, streamHandle, ErrorFlag);
+		} 
 		releaseStreamInfo(&streamInfos[i]);
 	} 
 	else {			//is recording
@@ -72,18 +73,18 @@ nvrproc_close(unsigned int streamHandle)
 		if(i < 0)
 		{
 			ErrorFlag = ERR_HANDLE;
-			TRACE_LOG( "Close record segment failed in record volume %s, handle:%u not exist! cancel!(errno:%u)\n", pcameraID, streamHandle, ErrorFlag);
+			TRACE_LOG( "Close record segment failed in record volume %s, handle:0x%x not exist! cancel!(errno:%u)\n", pcameraID, streamHandle, ErrorFlag);
 			return -1;
 		}
 		strcpy(pcameraID,  pDInfo[i]->CameraID);
-		TRACE_LOG( "Start to close record segment in record volume %s, handle:%u!\n",pcameraID, streamHandle);
+		TRACE_LOG( "Start to close record segment in record volume %s, handle:0x%x!\n",pcameraID, streamHandle);
 		res = CloseRecordSeg(streamHandle, NULL);
 		if(res < 0){
-			TRACE_LOG( "Close record segment failed in record volume %s, handle:%d! (errno:%u)\n",pcameraID, streamHandle, ErrorFlag);
+			TRACE_LOG( "Close record segment failed in record volume %s, handle:0x%x! (errno:%u)\n",pcameraID, streamHandle, ErrorFlag);
 		}
 		releaseDownloadInfo(streamHandle);
 	}
-	TRACE_LOG( "Close record segment successfully in record volume %s, handle:%u!\n",pcameraID, streamHandle);
+	TRACE_LOG( "Close record segment successfully in record volume %s, handle:0x%x!\n",pcameraID, streamHandle);
 	return res;
 }
 
@@ -99,31 +100,19 @@ nvrproc_create(CREATEargs createargs)
 	sinfo.height = 1;
 	sinfo.width = 2;
 	sinfo.size = createargs.header.header_len;
-	strcpy(sinfo.des, createargs.describe);
-    
-	if((i= findStreamInfoByCID(createargs.camerID) )!= -1)
-	{
-        if (streamInfos[i] && streamInfos[i]->lastRecordTime && ((time(NULL) - streamInfos[i]->lastRecordTime) > 10)) { 
-			nvrproc_close(streamInfos[i]->handle);
-        }
-        else{
-            ErrorFlag = CAMERA_IS_RECORDING; 
-            TRACE_LOG( "Create record segment in record volume %s failed! (errno:%d)\n",createargs.camerID, ErrorFlag);
-            return -1;
-        }
-	}
+	strcpy(sinfo.des, createargs.describe); 
 
 	handle = CreatRecordSeg(createargs.camerID, &sinfo, createargs.header.header_val, createargs.header.header_len);
 	if (handle == (unsigned int)-1)
 	{
-		TRACE_LOG( "Create record segment in record volume %s failed!(errno:%d)\n",createargs.camerID, ErrorFlag);
+		TRACE_LOG( "Create record segment in record volume %s failed!(errno:%u)\n",createargs.camerID, ErrorFlag);
 		return -1;
 	}
 	i = findStreamInfo(handle);
 	if (i < 0) {
 		i = allocStreamInfo(handle);
 		if (i < 0) {
-			TRACE_LOG( "Create record segment in record volume %s failed!(errno:%d)\n",createargs.camerID, ErrorFlag);
+			TRACE_LOG( "Create record segment in record volume %s failed!(errno:%u)\n",createargs.camerID, ErrorFlag);
 			return -1;
 		}
 	} else if (streamInfos[i]->isRecording) {		
@@ -135,48 +124,67 @@ nvrproc_create(CREATEargs createargs)
 	strcpy(streamInfos[i]->cameraID, createargs.camerID);
 	streamInfos[i]->BFlag = 0;
 	streamInfos[i]->isRecording = 1;
+    streamInfos[i]->writeDataLen = 0;
 
 	pthread_mutex_lock(&streamInfos[i]->Mutex_Buffer[streamInfos[i]->BFlag]);
 
 	if (pthread_create(&streamInfos[i]->wrThread, NULL, writeThread, (void *)streamInfos[i]) != 0) {
 		ErrorFlag = NVR_CREATWRITEDATATHREADFAIL;
 		pthread_mutex_unlock(&streamInfos[i]->Mutex_Buffer[streamInfos[i]->BFlag]);
-		TRACE_LOG( "Create record segment in record volume %s failed!(errno:%d)\n",createargs.camerID, ErrorFlag);
+		TRACE_LOG( "Create record segment in record volume %s failed!(errno:%u)\n",createargs.camerID, ErrorFlag);
 		return -1;
 	}
 
-	TRACE_LOG( "Create record segment in record volume %s successfully, handle:%d!\n",createargs.camerID,  handle);
+	TRACE_LOG( "Create record segment in record volume %s successfully, handle:0x%x!\n",createargs.camerID,  handle);
 	return handle;
 }
-
 
 unsigned int
 nvrproc_write(WRITEargs writeargs)
 {
-	//TRACE_LOG( "...nvrproc_write...\n");
+	//TRACE(DEBUG_DETAIL,  "...nvrproc_write, begintime=%u...\n", writeargs.beginTime);
 	int wlen = 0, i = 0, writeCost = 0;
 	struct timeval time2, time1;
+	int fd = 0;
 	//gettimeofday(&time2,NULL);
 
 	i = findStreamInfo(writeargs.recordHandle);
 	if (i < 0 || writeargs.data.data_len <= 0) {
 		ErrorFlag = ERR_HANDLE;
-		TRACE_LOG( "%u write error, (errno:%d).\n", writeargs.recordHandle, ErrorFlag);
+		TRACE(DEBUG_DETAIL,  "0x%x is an error recordhandle!\n", writeargs.recordHandle);
 		return -1;
 	}
-	if (writeTnodeToBuf(streamInfos[i], writeargs.beginTime, writeargs.data.data_len) < 0) {
-		TRACE_LOG( "write error in record volume %s, (errno:%d).\n", streamInfos[i]->cameraID, ErrorFlag);
+
+	//write to buf when the time is changed
+	
+	if(streamInfos[i]->writeTime == 0 || streamInfos[i]->writeTime == writeargs.beginTime)
+	{
+		streamInfos[i]->writeTime = writeargs.beginTime;
+		memcpy(streamInfos[i]->writeData + streamInfos[i]->writeDataLen, writeargs.data.data_val, writeargs.data.data_len);
+		streamInfos[i]->writeDataLen += writeargs.data.data_len; 
+		return writeargs.data.data_len;
+	}
+	
+	TRACE(DEBUG_DETAIL,  "...nvrproc_write, [cameraID=%s] [handle=0x%x] [begintime=%u]...\n", streamInfos[i]->cameraID, streamInfos[i]->handle, writeargs.beginTime);
+	if (writeTnodeToBuf(streamInfos[i], streamInfos[i]->writeTime, streamInfos[i]->writeDataLen) < 0) {
+		TRACE(DEBUG_DETAIL,  "%s write error1, (errno:%u).\n", streamInfos[i]->cameraID, ErrorFlag);
 		return -1;
 	}
 	gettimeofday(&time1, NULL);
 	//printf("writetnode cost %d : %10ld\n",time1.tv_sec-time2.tv_sec,time1.tv_usec-time2.tv_usec);
 
-	if (writeToBuf(streamInfos[i], writeargs.data.data_val, writeargs.data.data_len) < 0) {
+	if (writeToBuf(streamInfos[i], streamInfos[i]->writeData, streamInfos[i]->writeDataLen) < 0) {
 		ErrorFlag = WRITE_LVM_ERR;
-		TRACE_LOG( "write error in record volume %s, (errno:%d).\n", streamInfos[i]->cameraID, ErrorFlag);
+		TRACE(DEBUG_DETAIL,  "%s write error2, (errno:%u).\n", streamInfos[i]->cameraID, ErrorFlag);
 		return -1;
 	}
-	streamInfos[i]->v->storeAddr += writeargs.data.data_len;
+	streamInfos[i]->v->storeAddr += streamInfos[i]->writeDataLen;
+    
+	streamInfos[i]->writeTime = writeargs.beginTime;
+	bzero(streamInfos[i]->writeData, streamInfos[i]->writeDataLen);
+	streamInfos[i]->writeDataLen = 0;
+	memcpy(streamInfos[i]->writeData + streamInfos[i]->writeDataLen, writeargs.data.data_val, writeargs.data.data_len);
+	streamInfos[i]->writeDataLen += writeargs.data.data_len; 
 
 	gettimeofday(&time2, NULL);
 	if (time1.tv_sec == time2.tv_sec)
@@ -184,9 +192,9 @@ nvrproc_write(WRITEargs writeargs)
 	else
 		writeCost = (time2.tv_sec * 1000000) + time2.tv_usec - time1.tv_usec - time1.tv_sec * 1000000;
 	if (writeCost > 1000)
-		TRACE_LOG( "write data in record volume %s cost: %10ld us\n", streamInfos[i]->cameraID,  writeCost);
+		TRACE(DEBUG_DETAIL,  "%s writedata cost : %10ld us\n", streamInfos[i]->cameraID,  writeCost);
 
-	//printf("... write %d bytes,time = %d ...\n",writeargs.data.data_len,writeargs.beginTime); 
+	//printf("... write %d bytes,time = %d ...\n",writeargs.data.data_len,writeargs.beginTime);
 	return writeargs.data.data_len;
 }
 
@@ -247,8 +255,7 @@ writeThread(void *arg)
 		if (si->BUsed_Size[si->wrFlag] > 0) {
 			//pthread_mutex_lock(&si->Mutex_Buffer[si->wrFlag]);
 
-			gettimeofday(&time, NULL);
-			//注意互斥
+			gettimeofday(&time, NULL); 
 			ret = __write(si->vi->fd, si->RecordBuffer[si->wrFlag], si->BUsed_Size[si->wrFlag], si->wrAddr[si->wrFlag], &si->vi->mutex);
 			gettimeofday(&time1, NULL);
 			//printf("_write cost %d : %10ld\n", time1.tv_sec - time.tv_sec, time1.tv_usec - time.tv_usec);
@@ -258,7 +265,7 @@ writeThread(void *arg)
 				//pthread_rwlock_wrlock(&si->RWlock_Recording);
 				si->isRecording = 0;
 				//pthread_rwlock_unlock(&si->RWlock_Recording);
-				TRACE_LOG( "write error in record volume %s..(errno:%d)\n", si->cameraID, ErrorFlag);
+				TRACE_LOG( "write error in record volume %s..(errno:%u)\n", si->cameraID, ErrorFlag);
 			}
 			/*clear the buffer, and reset it */
 			//bzero(si->RecordBuffer[si->wrFlag], si->BUsed_Size[si->wrFlag]);
@@ -296,7 +303,7 @@ nvrproc_open(CMMNargs openargs)
 	strcpy(pDInfo[i]->CameraID, openargs.camerID);
 	pthread_rwlock_unlock(&DInfo_PRW);
 	//end
-	TRACE_LOG( "open record segment successfully in record volume %s, handle:%u!.\n", openargs.camerID, handle);
+	TRACE_LOG( "open record segment successfully in record volume %s, handle:0x%x!.\n", openargs.camerID, handle);
 	return handle;
 }
 
@@ -416,19 +423,19 @@ nvrproc_delete(DELargs delargs)
 unsigned int
 nvrproc_login(LOGINargs loginargs)
 {
-	TRACE_LOG( "%s:%d start to login!\n", ClientIP, ClientPort);
+	TRACE_LOG( "%s:%u start to login!\n", ClientIP, ClientPort);
 	clearInactiveStreams();
 	//get_lv_name(lv, MAX_LV_NUM);
 	//if(num<=0)return -1;
 	if (loginargs.userName == NULL || loginargs.pwd == NULL)
 	{
-		TRACE_LOG("%s:%d login error, error usrname or password!\n", ClientIP, ClientPort);
+		TRACE_LOG("%s:%u login error, error usrname or password!\n", ClientIP, ClientPort);
 		return 1;
 	}
 	if (strcmp(loginargs.userName, "admin")
 	    || strcmp(loginargs.pwd, "password"))
 	{	
-		TRACE_LOG("%s:%d login error, error usrname or password!\n", ClientIP, ClientPort);
+		TRACE_LOG("%s:%u login error, error usrname or password!\n", ClientIP, ClientPort);
 		return 1;
 	}
 	return 0;
@@ -437,7 +444,7 @@ nvrproc_login(LOGINargs loginargs)
 int
 nvrproc_logout(unsigned int userid)
 {
-	TRACE_LOG( "%d start to logout!\n", userid);
+	TRACE_LOG( "%u start to logout!\n", userid);
 
 	return 0;
 }
@@ -445,7 +452,7 @@ nvrproc_logout(unsigned int userid)
 unsigned long
 nvrproc_getlasterror()
 {
-	TRACE_LOG( "getlasterror, err = %d\n", ErrorFlag);
+	TRACE_LOG( "getlasterror, err = %u\n", ErrorFlag);
 	return ErrorFlag;
 }
 
@@ -484,8 +491,7 @@ nvrproc_creatrecvol(CREATRECVOLargs creatRecVolArgs)
 	TRACE_LOG( "start to create record volume %s in %s!\n",creatRecVolArgs.name, creatRecVolArgs.volumeid);
 	int ret = 0, i;
 	uint64_t volSize = creatRecVolArgs.blockSize;
-	volSize *= creatRecVolArgs.blocks;
-    bzero(lv, MAX_LV_NUM*sizeof(LvInfo));
+	volSize *= creatRecVolArgs.blocks; 
 	get_lv_name(lv,MAX_LV_NUM);
 	//if(num<=0)return -1;
     if('\0' == *creatRecVolArgs.volumeid)
@@ -560,15 +566,15 @@ clearInactiveStreams()
 	for (; i < MAX_STREAMS; i++) {
 		pthread_rwlock_rdlock(&SInfo_PRW);
 		//note: while nothing to write,how to close
-		if (streamInfos[i] && streamInfos[i]->lastRecordTime && ((curTime - streamInfos[i]->lastRecordTime) > 120)) {
-			TRACE_LOG("Close record stream%s:%u!\n", streamInfos[i]->cameraID, streamInfos[i]->handle);
+		if (streamInfos[i] && streamInfos[i]->lastRecordTime && ((curTime - streamInfos[i]->lastRecordTime) > 30)) {
+			TRACE_LOG("Find a invalid record stream %s, handle:0x%x!\n", streamInfos[i]->cameraID, streamInfos[i]->handle);
 			pthread_rwlock_unlock(&SInfo_PRW);
 			nvrproc_close(streamInfos[i]->handle);
 		} else
 			pthread_rwlock_unlock(&SInfo_PRW);
 		if (pDInfo[i] && (curTime - pDInfo[i]->lastReadTime > 30))
 		{
-			TRACE_LOG("Close download stream %s:%u!\n", pDInfo[i]->CameraID, pDInfo[i]->dHandle);
+			TRACE_LOG("Find a invalid download stream %s, handle:0x%x!\n", pDInfo[i]->CameraID, pDInfo[i]->dHandle);
 			nvrproc_close(pDInfo[i]->dHandle);
 		}
 	}
@@ -599,8 +605,7 @@ WriteTnodeThread(void *arg)
 
 	}
 }
-
-//负责录象卷操作的线程
+ 
 void *
 VolOpThread(void *arg)
 {
@@ -669,8 +674,6 @@ VolOpThread(void *arg)
 	pthread_exit(0);
 }
 
-//********************************
-
 long long
 get_free_vol_size(const char *volName)
 {
@@ -714,6 +717,7 @@ get_lv_name(LvInfo * lv_info, int max)
 	char line[MAXLINE];
 	char *tmp;
 	int i;
+    bzero(lv_info, max*sizeof(LvInfo));
 	if ((fp = popen("lvs -o vg_name,lv_name --noheadings --separator /", "r")) != NULL) {
 		while (fgets(line, MAXLINE, fp) != NULL) {
 			i = 0;
@@ -855,4 +859,216 @@ int isRunning()
         return 0;
     }
 }
+
+int tcp_create()
+{
+    int listenfd;
+    struct sockaddr_in servaddr;
+    if((listenfd=socket(AF_INET,SOCK_STREAM,0))<0){
+		close(listenfd);
+		return -1;
+	}
+    bzero(&servaddr, sizeof(servaddr));
+    servaddr.sin_family=AF_INET;
+	servaddr.sin_addr.s_addr=htonl(INADDR_ANY);
+	servaddr.sin_port=htons(SERV_PORT);
+	if(bind(listenfd,(struct sockaddr *) &servaddr,sizeof(servaddr))<0){
+		printf("error in binding\n");
+		close(listenfd);
+		return -1;
+	}    
+	if(listen(listenfd,10)<0){
+		printf("error in listening\n");
+		close(listenfd);
+		return -1;
+	}
+    return listenfd;
+}
+
+int tcp_send(int fd, char *buf, int len, int flags)
+{
+    int nsend=0,send_count=0;
+    int length =len;
+ 
+    if(buf==NULL)
+        return -1;
+  
+    while(length > 0)
+    {
+        nsend =send(fd, buf+send_count, length, flags);
+        if(nsend == 0)
+            return 0;
+         
+        if(nsend < 0)
+        {
+             perror("Failed send(),error code:");
+             return -1;
+        }
+        else
+        {
+         length -= nsend;
+         send_count += nsend;
+        }
+    }
+    return send_count;
+}
+
+int tcp_recv(int fd, char *buf, int len, int flags)
+{
+     
+    int nrec=0,recv_count=0;
+    int length =len;
+ 
+    if(buf==NULL)
+        return -1;
+  
+    while(length > 0)
+    {
+        nrec =recv(fd, buf+recv_count, length, flags);
+        if(nrec == 0)
+            return 0;
+         
+        if(nrec < 0)
+        {
+             perror("Failed recv(),error code:");
+             return -1;
+        }
+        else
+        {
+         length -= nrec;
+         recv_count += nrec;
+        }
+    }
+    return recv_count;
+}
+int enc_rec_result(char *presult, int* pret, unsigned int* perron)
+{
+    char headchar = 'h';
+    char tailchar  = 't';
+    memcpy(presult, &headchar, sizeof(char));
+    presult += sizeof(char);
+    memcpy(presult, pret, sizeof(int));
+    presult += sizeof(int);
+    memcpy(presult, perron, sizeof(unsigned int));
+    presult += sizeof(unsigned int);
+    memcpy(presult, &tailchar, sizeof(char)); 
+    return 0;
+} 
+int dec_rec_head(char *phead, unsigned int* precordhandle, unsigned int* pdatalen, unsigned int* pbegintime)
+{
+    char headchar = '\0';
+    char tailchar  = '\0';
+    memcpy(&headchar, phead, sizeof(char));
+    if (headchar != 'h') 
+        return -1;
+    phead += sizeof(char); 
+    memcpy(precordhandle, phead, sizeof(unsigned int));
+    phead += sizeof(unsigned int);     
+    memcpy(pdatalen, phead, sizeof(unsigned int));
+    phead += sizeof(unsigned int); 
+    memcpy(pbegintime, phead, sizeof(unsigned int));
+    phead += sizeof(unsigned int);
+    memcpy(&tailchar, phead, sizeof(char)); 
+    if (tailchar != 't') 
+        return -1;
+    return 0;
+
+}
+
+int record (int sockfd ) 
+{ 
+    int rc, ret;
+    unsigned int erron = 0;
+    char phead[REC_HEAD_SIZE];
+    char presult[REC_RESULT_SIZE];
+    char data[MAX_RECORD_DATA_SIZE];
+    unsigned int datalen=0, handle=0, begintime=0;
+    WRITEargs writeargs;
+    bzero(phead, REC_HEAD_SIZE);
+    bzero(presult, REC_RESULT_SIZE); 
+    rc = tcp_recv(sockfd, phead, REC_HEAD_SIZE, 0);
+    if(rc <= 0)
+    { 
+         return -1;
+    }
+    if (dec_rec_head(phead, &handle, &datalen, &begintime) < 0) 
+    {
+        printf("dec_rec_head error!\n");
+        return -1;
+    }
+    rc = tcp_recv(sockfd, data, datalen, 0);
+    if(rc <= 0)
+    {
+        return -1;
+    }
+    writeargs.recordHandle = handle;
+    writeargs.beginTime = begintime;
+    writeargs.data.data_val = data;
+    writeargs.data.data_len = datalen;
+    ret =  nvrproc_write(writeargs);
+    if(ret < 0)
+        erron = ErrorFlag;
+    enc_rec_result(presult, &ret, &erron);
+    rc = tcp_send(sockfd, presult, REC_RESULT_SIZE, 0);
+    if(rc <= 0)
+    { 
+         return -1;
+    } 
+    return ret; 
+}  
+
+void *TcpPollThread(void* arg)
+{
+    TRACE_LOG( "Start TcpPollThread thread!\n");
+
+    int i, maxi, listenfd, connfd, sockfd;
+    int nready;
+    ssize_t n; 
+    socklen_t clilen;
+    struct pollfd client[OPEN_MAX];
+    struct sockaddr_in cliaddr;
+    listenfd = (int)arg;
+    client[0].fd = listenfd;
+    client[0].events = POLLIN;
+    for (i =1; i < OPEN_MAX; i++)
+        client[i].fd = -1;
+    maxi = 0;
+    while(1) { 
+        nready = poll(client, maxi + 1, -1); 
+        if (nready == 0) {
+            continue;
+        }
+        if (client[0].revents == POLLIN) { 
+            clilen = sizeof(cliaddr);
+            connfd = accept(listenfd, (struct sockaddr *) &cliaddr, &clilen); 
+            for (i = 1; i < OPEN_MAX; i++) {
+                if (client[i].fd < 0) {
+                    client[i].fd = connfd;
+                    TRACE(DEBUG_DETAIL, "New client connect!\n");
+                    break;
+                }
+            }
+            if (i == OPEN_MAX)
+                TRACE(DEBUG_DETAIL, "Too Many clients!defused!\n");
+            client[i].events = POLLIN;
+            if (i > maxi)
+                maxi = i;  /*max index in client[] array*/
+            if (--nready <=0)
+                continue;       /*no more readable descriptors*/
+        } 
+        for (i = 1; i <= maxi; i++) { 
+            if ( client[i].revents == POLLIN) {
+                if (record(client[i].fd) < 0) {
+                    close(client[i].fd);
+                    client[i].fd = -1;
+                }
+            }
+            else
+                continue;
+            if (--nready <= 0)
+                break;
+        }
+    }
+}
+
 
