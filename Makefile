@@ -9,10 +9,10 @@ PROGS = nvrd
 
 NVR_GFILES = nvr_clnt.c nvr_cif.c nvr_sdk.c nvr_test.c nvr.h nvr_sdk.h nvr_common.h Debug.h
 
-NVRD_GFILES = nvr_svc.c nvr_sif.c nvr_srp.c nvr.h multi_stream.c 
+NVRD_GFILES = nvr_svc.c nvr_sif.c nvr_srp.c nvr.h multi_stream.c syslog.c
 
 NVR_OBJ =  nvr_clnt.o nvr_cif.o nvr_test.o nvr_sdk.o
-NVRD_OBJ = nvr_svc.o nvr_sif.o nvr_srp.o multi_stream.o
+NVRD_OBJ = nvr_svc.o nvr_sif.o nvr_srp.o multi_stream.o syslog.o
 
 DEVICE_OBJ = rd_wr.o bitops_add.o util.o parms.o
 #	cc  -o ves  -g -DDebug  rd_wr.o bitops_add.o parms.o util.o  init.o -pthread

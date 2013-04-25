@@ -8,6 +8,7 @@
 #include"rd_wr.h"
 #include"multi_stream.h"
 #include"Debug.h"
+#include"syslog.h"
 unsigned long long InitFlag = 0;
 #define  _TLEN(v)         ((v->savedDays*24*60*60)/(TimeBuffSize))
 #define _FISTTIMESIZE(v)    TimeBuffSize
@@ -1892,7 +1893,7 @@ CreateRecordVol(char *volumeid, char *name, char *alias, short savedDays, char d
 	_sbinfo sbinfo = NULL;
 	int flag;
 	if(initCameraInfos()<0){
-        TRACE_LOG("Init CameraInofs error!");
+        syslog(LOG_ERR,  "Init CameraInofs error!");
         return -1;
     }
     if(!read_vol_by_camera(NULL, name))//if exist same camera in list, remove it
@@ -1940,9 +1941,9 @@ DeleteRecordVol(const char *cameraid, int mode)
 	int ID, handle;
 	_vnodeInfo vi;
 	//seginfo * seg;
-	TRACE_LOG("Delete RecordVol...");
+	syslog(LOG_INFO,  "Delete RecordVol...");
     if(initCameraInfos()<0){
-        TRACE_LOG("Init CameraInofs error!");
+        syslog(LOG_ERR,  "Init CameraInofs error!");
         return -1;
     }
 	handle = get_dev_ID(cameraid, &sbinfo);
@@ -1988,7 +1989,7 @@ DeleteVideoVol(const char *vol_path)
 	_vnodeInfo vi;
 	//seginfo * seg;
 	if(initCameraInfos()<0){
-        TRACE_LOG("Init CameraInofs error!");
+        syslog(LOG_ERR,  "Init CameraInofs error!");
         return -1;
     }
 	if (!spin_rdlock(sbTable.spin)) {	//?????
@@ -2085,11 +2086,11 @@ void showCameraList()
 {
     if(CameraInfos)
     {
-         TRACE_LOG("Show Camera List:\n");
+         syslog(LOG_INFO,  "show camera list:");
          CameraInfo * p = CameraInfos;
          while(p->next != NULL)
          {
-            TRACE_LOG("%s\n",p->next->CameraID);
+            syslog(LOG_INFO,  "%s",p->next->CameraID);
             p = p->next;
          }
     }

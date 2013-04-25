@@ -234,12 +234,6 @@ typedef struct DELRECVOLargs DELRECVOLargs;
 	extern RECORDBYORDERres* nvrproc_searchrecordbyorder_1_svc(RECORDBYORDERargs*,   struct svc_req *);
 	
     extern int nvrprog_1_freeresult(SVCXPRT *, xdrproc_t, caddr_t);
-    extern int tcp_create();
-    extern void *listen_request_thread(void *args);
-    extern void *VolOpThread(void *);
-    extern void *WriteTnodeThread(void *);
-    extern void *TcpPollThread(void *);
-    extern int initCameraInfos();
 
 #else				/* K&R C */
 #define NVRPROC_OPEN 1
