@@ -21,12 +21,6 @@ extern "C" {
 #define userNameLEN 256
 #define pwdLen 256 
 
-
-
-#define OPEN_MAX 256
-
-
-
 typedef unsigned int u_int;
 typedef unsigned long u_long;
 typedef unsigned long long u_long_long;

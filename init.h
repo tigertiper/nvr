@@ -7,7 +7,8 @@ extern int tcp_create();
 extern void *listen_request_thread(void *args);
 extern void *VolOpThread(void *);
 extern void *WriteTnodeThread(void *);
-extern void *TcpPollThread(void *);
+extern void *SerialRecordThread(void* arg);
+extern void *ParallelRecordThread(void* arg);
 extern void *UpdateThread(void *arg);
 extern int initCameraInfos();
 

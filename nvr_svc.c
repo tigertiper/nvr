@@ -24,6 +24,7 @@
 
 #define NVRDVER "1.165"
 #define R_UNLIMITED	(~0UL)
+#define PARALLELRECORD 
 
 char ClientIP[IPLEN];
 unsigned short int ClientPort;
@@ -299,7 +300,7 @@ main(int argc, char **argv)
     
 	register SVCXPRT *transp;
 	pthread_t pid, pid1,pid2;
-	pthread_t pid_sstatus;
+	pthread_t pid3;
     int listenfd;
 
     
@@ -352,17 +353,27 @@ main(int argc, char **argv)
         exit(1);
     }
     
-	if (pthread_create(&pid2, NULL, TcpPollThread, (void*)listenfd) != 0) {
-		fprintf(stderr, "Create TcpPollThread failure.\n");
-		syslog(LOG_ERR, "[TCP]Create TcpPollThread failure!*exit*");
+#ifndef PARALLELRECORD 
+	if (pthread_create(&pid2, NULL, SerialRecordThread, (void*)listenfd) != 0) {
+		fprintf(stderr, "Create SerialRecordThread failure.\n");
+		syslog(LOG_ERR, "Create SerialRecordThread failure!*exit*");
 		exit(1);
 	}
-/*
+#else
+    if (pthread_create(&pid2, NULL, ParallelRecordThread, (void*)listenfd) != 0) {
+        fprintf(stderr, "Create ParallelRecordThread failure.\n");
+        syslog(LOG_ERR, "Create ParallelRecordThread failure!*exit*");
+        exit(1);
+    }
+#endif
+
+#ifdef UPDATE
 	if (pthread_create(&pid3, NULL, UpdateThread, NULL) != 0) { 
 		syslog(LOG_ERR,"Create UpdateThread failure!*exit*");
 		exit(1);
-	} 
-*/    
+	}  
+#endif
+
 	struct sigaction act;
 	act.sa_handler = sigpipeHandler;
 	sigemptyset(&act.sa_mask);

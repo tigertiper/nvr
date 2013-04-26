@@ -529,7 +529,7 @@ delete_vi(_sbinfo sbinfo, vnode * v, char mode, int key)
 	if (mode == WriteRECORD) {
         vi = v->_bf;
         while(vi) {
-            if (vi->status == WriteRECORD)
+            if (vi->status == WriteRECORD && vi->key == key)
 			    break;
             p = vi;
             vi = vi->next;

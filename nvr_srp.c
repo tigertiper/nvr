@@ -25,6 +25,7 @@
 #define SERV_PORT 8000 
 #define REC_HEAD_SIZE 14 
 #define REC_RESULT_SIZE 10
+#define OPEN_MAX 256
 
 extern pthread_rwlock_t DInfo_PRW;
 extern char ClientIP[IPLEN];
@@ -118,7 +119,7 @@ nvrproc_create(CREATEargs createargs)
 			return -1;
 		}
 	} else if (streamInfos[i]->isRecording) {		
-		syslog(LOG_ERR,  "create record stream fail:exist handle, IPC:%s.",createargs.camerID);
+		syslog(LOG_ERR,  "create record stream fail:exist handle, IPC:%s, handle:0x%x.",createargs.camerID, handle);
 		return -1;
 	}
 
@@ -167,7 +168,7 @@ nvrproc_write(WRITEargs writeargs)
 		return writeargs.data.data_len;
 	}
 	
-	syslog(LOG_DEBUG,   "...nvrproc_write,cameraID:%s, handle:0x%x, begintime:%u...", streamInfos[i]->cameraID, streamInfos[i]->handle, writeargs.beginTime);
+	syslog(LOG_DEBUG,   "...nvrproc_write, cameraID:%s, handle:0x%x, begintime:%u...", streamInfos[i]->cameraID, streamInfos[i]->handle, writeargs.beginTime);
 	if (writeTnodeToBuf(streamInfos[i], streamInfos[i]->writeTime, streamInfos[i]->writeDataLen) < 0) {
 		syslog(LOG_ERR,   "write tnode to buf fail, IPC:%s, errno:%u.", streamInfos[i]->cameraID, ErrorFlag);
 		return -1;
@@ -446,7 +447,7 @@ nvrproc_login(LOGINargs loginargs)
 int
 nvrproc_logout(unsigned int userid)
 {
-	syslog(LOG_INFO,  "logout, id:%u", userid);
+	syslog(LOG_INFO,  "logout, id:%u.", userid);
 
 	return 0;
 }
@@ -1030,7 +1031,37 @@ int record (int sockfd )
     return ret; 
 }  
 
-void *TcpPollThread(void* arg)
+void *recordthread(void* arg)
+{
+      int socket=(int)arg;
+      int ready;
+      unsigned int last_request_time;
+      struct pollfd pfd;
+      pfd.events = POLLIN;
+	  pfd.fd = socket;
+      while(1) {
+        ready = poll(&pfd, 1, 3000); 
+        if (ready < 0) {
+            break;
+        }
+        if (ready == 0) {
+
+            if ((time(NULL) - last_request_time) > 30) { //if no data come for 30s, close connect
+                syslog(LOG_ERR, "no data come exceed 30 seconds, sockfd:%d", socket);
+                break;
+            }
+            continue;  
+        }
+        last_request_time = time(NULL);
+        if(record(socket) < 0) {
+            break;
+        }
+      }
+      close(socket);
+      syslog(LOG_INFO, "close record socket %d.", socket);
+}
+
+void *SerialRecordThread(void* arg)
 {
     syslog(LOG_INFO,  "start record thread.");
 
@@ -1084,4 +1115,28 @@ void *TcpPollThread(void* arg)
     }
 }
 
+void *ParallelRecordThread(void* arg)
+{
+    syslog(LOG_INFO, "start parallel record thread.");
+    int server_socket,client_socket,result,len;
+    struct sockaddr_in clientaddr;
+    pthread_t pt;  
+    server_socket = (int)arg; 
+    while(1)
+    {
+        if((client_socket = accept(server_socket, (struct sockaddr*)&clientaddr, (socklen_t*)&len))==0)
+        {
+            perror("server accept:");
+            continue; 
+        }
+ 
+        if((result=pthread_create(&pt, NULL, recordthread, (void *)client_socket))!=0)
+        {
+            perror("pthread create:");
+            continue; 
+        }
+        pthread_detach(pt);
+        syslog(LOG_INFO, "create new record thread, sockfd:%d.", client_socket);
+    }    
+}
 
