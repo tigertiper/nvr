@@ -24,7 +24,8 @@
 
 #define NVRDVER "1.165"
 #define R_UNLIMITED	(~0UL)
-#define PARALLELRECORD 
+//#define PARALLELRECORD 
+//#define UPDATE
 
 char ClientIP[IPLEN];
 unsigned short int ClientPort;

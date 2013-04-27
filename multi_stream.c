@@ -75,6 +75,11 @@ allocStreamInfo(unsigned int handle)
 	
 	 i = HASH(i);
 	streamInfos[i] = (StreamInfo *) malloc(sizeof(StreamInfo));
+    if (streamInfos[i] == NULL) {
+        pthread_rwlock_unlock(&SInfo_PRW);
+        ErrorFlag = MALLOC_ERR;
+        return -1;
+    }
 	pthread_rwlock_unlock(&SInfo_PRW);
 	initWriteStream(handle, &(streamInfos[i]->v), &(streamInfos[i]->ID), &(streamInfos[i]->sbinfo), &(streamInfos[i]->vi));
 	streamInfos[i]->wrAddr[0] = streamInfos[i]->v->storeAddr;
@@ -89,6 +94,7 @@ allocStreamInfo(unsigned int handle)
 	streamInfos[i]->BEmpty_Size[1] = STREAM_BUFFER_SIZE;
 	streamInfos[i]->BUsed_Size[0] = 0;
 	streamInfos[i]->BUsed_Size[1] = 0;
+    streamInfos[i]->wrThread = 0;
 	pthread_rwlock_init(&streamInfos[i]->RWlock_Recording, NULL);
 	pthread_mutex_init(&streamInfos[i]->Mutex_Buffer[0], NULL);
 	pthread_mutex_init(&streamInfos[i]->Mutex_Buffer[1], NULL);
@@ -121,6 +127,7 @@ initDownloadInfo(unsigned int dhandle)
 			pDInfo[HASH(i)] = (DownloadInfo *) malloc(sizeof(DownloadInfo));
 			if (!pDInfo[HASH(i)]) {
 				pthread_rwlock_unlock(&DInfo_PRW);
+                ErrorFlag = MALLOC_ERR;
 				return -1;
 			}
 			pDInfo[HASH(i)]->dHandle = dhandle;

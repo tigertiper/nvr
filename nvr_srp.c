@@ -60,8 +60,9 @@ nvrproc_close(unsigned int streamHandle)
 		pthread_mutex_unlock(&streamInfos[i]->Mutex_Buffer[streamInfos[i]->BFlag]);
 		streamInfos[i]->isRecording = 0;
 		pthread_rwlock_unlock(&streamInfos[i]->RWlock_Recording);
-
-		pthread_join(streamInfos[i]->wrThread, NULL);
+        if(streamInfos[i]->wrThread > 0) {
+            pthread_join(streamInfos[i]->wrThread, NULL);
+        }
 		streamInfos[i]->count = streamInfos[i]->vi->count;
 		memcpy(streamInfos[i]->t, streamInfos[i]->vi->t, WriteLen * sizeof(tnode));
 		streamInfos[i]->vi->count = 0;
@@ -401,10 +402,9 @@ VOLUMinfo
 nvrproc_getvolumeinfo(unsigned int camerid)
 {
 	syslog(LOG_INFO,  "get volume info, IPC:%s", camerid);
-	static VOLUMinfo *voluminfo;
-	voluminfo = (VOLUMinfo *) malloc(sizeof(VOLUMinfo));
-	bzero(voluminfo, sizeof(READres));
-	return *voluminfo;
+	static VOLUMinfo voluminfo; 
+	bzero(&voluminfo, sizeof(VOLUMinfo));
+	return voluminfo;
 }
 
 unsigned int
@@ -563,19 +563,18 @@ clearInactiveStreams()
 {
 	syslog(LOG_DEBUG,  "clearing inactive streams...");
 
-	int i = 0;
-	unsigned int curTime = time(NULL);
+	int i = 0; 
 
 	for (; i < MAX_STREAMS; i++) {
-		pthread_rwlock_rdlock(&SInfo_PRW);
+		pthread_rwlock_rdlock(&SInfo_PRW); 
 		//note: while nothing to write,how to close
-		if (streamInfos[i] && streamInfos[i]->lastRecordTime && ((curTime - streamInfos[i]->lastRecordTime) > 30)) {
+		if (streamInfos[i] && streamInfos[i]->lastRecordTime && ((time(NULL) - streamInfos[i]->lastRecordTime) > 30)) {
 			syslog(LOG_INFO, "find a inactive record stream, IPC:%s, handle:0x%x.", streamInfos[i]->cameraID, streamInfos[i]->handle);
 			pthread_rwlock_unlock(&SInfo_PRW);
 			nvrproc_close(streamInfos[i]->handle);
 		} else
-			pthread_rwlock_unlock(&SInfo_PRW);
-		if (pDInfo[i] && (curTime - pDInfo[i]->lastReadTime > 30))
+			pthread_rwlock_unlock(&SInfo_PRW); 
+		if (pDInfo[i] && (time(NULL) - pDInfo[i]->lastReadTime > 30))
 		{
 			syslog(LOG_INFO, "find a inactive download stream, IPC:%s, handle:0x%x.", pDInfo[i]->CameraID, pDInfo[i]->dHandle);
 			nvrproc_close(pDInfo[i]->dHandle);
@@ -1084,11 +1083,15 @@ void *SerialRecordThread(void* arg)
         }
         if (client[0].revents == POLLIN) { 
             clilen = sizeof(cliaddr);
-            connfd = accept(listenfd, (struct sockaddr *) &cliaddr, &clilen); 
+            connfd = accept(listenfd, (struct sockaddr *) &cliaddr, &clilen);
+            if (connfd < 0) {
+                perror("server accept:");
+                continue;
+            }
             for (i = 1; i < OPEN_MAX; i++) {
                 if (client[i].fd < 0) {
                     client[i].fd = connfd;
-                    syslog(LOG_INFO,  "create new record socket.");
+                    syslog(LOG_DEBUG,  "create new record socket.");
                     break;
                 }
             }
@@ -1136,7 +1139,7 @@ void *ParallelRecordThread(void* arg)
             continue; 
         }
         pthread_detach(pt);
-        syslog(LOG_INFO, "create new record thread, sockfd:%d.", client_socket);
+        syslog(LOG_DEBUG, "create new record thread, sockfd:%d.", client_socket);
     }    
 }
 
