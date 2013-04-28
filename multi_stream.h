@@ -113,7 +113,7 @@ extern void releaseStreamInfo(StreamInfo ** si);	//called by stoprecord
 void clearInactiveStreams();
 extern int initDownloadInfo(unsigned int dhandle);
 extern int findDownloadInfo(unsigned int dhandle);
-extern int releaseDownloadInfo(unsigned int dhandle);
+extern void releaseDownloadInfo(DownloadInfo ** di); 
 int writeToBuf(StreamInfo * si, char *data, int dataLen);
 int write_data(_sbinfo, vnode *, _vnodeInfo, char *, unsigned int,
 		StreamInfo *);

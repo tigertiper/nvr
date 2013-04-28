@@ -1281,7 +1281,7 @@ CloseRecordSeg(uint32_t handle, StreamInfo * si)
 		ErrorFlag = ERR_HANDLE;
 		return -1;
 	}
-	if (vi->status == 1) {	//写
+	if (vi->status == 1 && si) {	//写
 		if (si->count > 0)
 			endTime = si->t[si->count - 1].time;	//
 		else

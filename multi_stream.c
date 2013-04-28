@@ -110,11 +110,11 @@ releaseStreamInfo(StreamInfo ** si)
 	pthread_mutex_destroy(&(*si)->Mutex_Buffer[1]);
 	pthread_mutex_destroy(&(*si)->Mutex_Buffer[0]);
 	pthread_rwlock_destroy(&(*si)->RWlock_Recording);
-	bzero((*si), sizeof(StreamInfo));
-	if (*si)
-		free(*si);
+	bzero((*si), sizeof(StreamInfo)); 
+	free(*si);
 	*si = NULL;
 	pthread_rwlock_unlock(&SInfo_PRW);
+    return;
 }
 int
 initDownloadInfo(unsigned int dhandle) 
@@ -161,24 +161,17 @@ findDownloadInfo(unsigned int dhandle)
 	ErrorFlag = ERR_HANDLE;
 	return -1;
 }
-
-
-//wangchong
-    int
-releaseDownloadInfo(unsigned int dhandle) 
+ 
+void
+releaseDownloadInfo(DownloadInfo** di) 
 {
-	int i = 0;
-	i = findDownloadInfo(dhandle);
-	if (i < 0) {
-		printf("dhandle does not exist!\n");
-		return -1;
-	}
+	if(*di == NULL)
+	    return;
 	pthread_rwlock_wrlock(&DInfo_PRW);
-	if (pDInfo[i]) {
-		bzero(pDInfo[i], sizeof(DownloadInfo));
-		free(pDInfo[i]);
-		pDInfo[i] = NULL;
-	}
+	bzero((*di), sizeof(DownloadInfo)); 
+	free(*di);
+	*di = NULL;
 	pthread_rwlock_unlock(&DInfo_PRW);
-	return 0;
+	return;
 }
+
