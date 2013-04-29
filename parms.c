@@ -21,7 +21,7 @@
 SBTable sbTable;
 void
 sb_to_buf(char *buf, SBlock * sb)
-{				//å°è¶çº§åçä¿¡æ¯èœ¬æ¢æbuf
+{
 	memcpy(buf, sb->fileSystemName, FNameLength * sizeof(char));
 	buf = buf + FNameLength * sizeof(char);
 	memcpy(buf, &sb->totalSize, sizeof(unsigned long long));
@@ -149,7 +149,7 @@ buf_to_vnode(char *buf, vnode * v)
 	memcpy(&v->wr_count, buf, sizeof(short));
 	buf += sizeof(short);
 	memcpy(&v->status, buf, sizeof(char));
-	v->_bf = NULL;		//æåå¯¹åºççŒå²åº
+	v->_bf = NULL;
 }
 
 void
@@ -182,7 +182,7 @@ buf_to_DSI(char *buf, seginfo * seg)
 
 int
 cal_blocks(vnode * v)
-{				//æ ¹æ®vnodeè®¡ç®åºå·²ç»åéçåæ°
+{
 	int i, j;
 	int sum = 0;
 	for (i = 0; i < MaxchunkCount && v->block[i][0] != CHUNKNULL; i++) {
@@ -191,13 +191,11 @@ cal_blocks(vnode * v)
 			sum++;
 			j++;
 		}
-	}			//end for( i=0;????
+	}
 	return sum;
 }
 
-/*
-äžºvnodeå°è¯åéæ°æ®åä¹åïŒç¶ååè®Ÿçœ®bitmap
-*/
+
 int
 set_clr_bitmap(_sbinfo sbinfo, vnode * v, int flag)
 {
@@ -217,7 +215,7 @@ set_clr_bitmap(_sbinfo sbinfo, vnode * v, int flag)
 
 int
 free_blocks(_sbinfo sbinfo, vnode * v, int time)
-{				//å°superblockçç¶ææ¢å€å°åévä¹å
+{
 	sbinfo->_es->wTime = time;
 	sbinfo->_es->vnodeCount--;
 	sbinfo->_es->freeBlocksCount += cal_blocks(v);
@@ -255,23 +253,23 @@ put_sb(_sbinfo sbinfo, vnode * v)
 	pthread_mutex_unlock(&sbinfo->mutex);
 	sbinfo->_es->wTime = (uint32_t) time(NULL);
 	sb_to_buf(buf, sbinfo->_es);
-	if (v == NULL) {	//如果当写的过程中出错，不需要维护一致性
+	if (v == NULL) {	//�����д�Ĺ����г���������Ҫά��һ����
 		if (_write(fd1, buf, SB_SIZE, 0) < 0)
 			goto err1;
 		if (_write(fd1, sbinfo->bitmap, MaxBlocks, BitmapAddr) < 0)
 			goto err1;
 		// if(_write(fd1,sbinfo->vnodemapping,MaxUsers/8,VBitmapAddr)<0) goto err1;
-	}			//end if(v!=NULL)?
+	}
 	else {
 		if (_write(fd1, (char *)buf, SB_SIZE, 0) < 0) {
-			free_blocks(sbinfo, v, temp);	//如果分配一个vnode出错，则内存superbilock恢复到vnode分配之前的状态。
+			free_blocks(sbinfo, v, temp);	//�������һ��vnode���������ڴ�superbilock�ָ���vnode����֮ǰ��״̬��
 			ErrorFlag = WRITE_LVM_ERR;
 			goto err1;
 		}
 		if (_write(fd1, sbinfo->bitmap, MaxBlocks, BitmapAddr) < 0) {
 			free_blocks(sbinfo, v, temp);
 			sb_to_buf(buf, sbinfo->_es);
-			lseek64(fd1, 0, SEEK_SET);	//因为superblock已经写入逻辑卷，需要重新写入。
+			lseek64(fd1, 0, SEEK_SET);	//��Ϊsuperblock�Ѿ�д���߼�������Ҫ����д�롣
 			write(fd1, buf, SB_SIZE);
 			ErrorFlag = WRITE_LVM_ERR;
 			goto err1;
@@ -286,7 +284,7 @@ put_sb(_sbinfo sbinfo, vnode * v)
 
 char *
 extend_buf(vnode * v, _sbinfo sbinfo, char mode)
-{				//è¯»çæ¶åéèŠåéåšsbinfo->_bhçŒå²åºäž­åéäžäžªvnodeInfo
+{
 	int nr;
 	uint8_t key = 0;
 	_vnodeInfo vi, p;
@@ -299,9 +297,9 @@ extend_buf(vnode * v, _sbinfo sbinfo, char mode)
 	setbit_(sbinfo->_bh->map, nr);
 	spin_rwunlock(sbinfo->_bh->spin);
 	// if(!v->_bf) spin_rwinit(v->spin);
-	while (spin_wrlock(v->spin));	/////////
+	while (spin_wrlock(v->spin));
 	vi = v->_bf;
-	if (vi == NULL || vi->key > key) {	//分配key是有序的。
+	if (vi == NULL || vi->key > key) {	//����key������ġ�
 		p = v->_bf;
 		v->_bf = (_vnodeInfo) (sbinfo->_bf + sizeof(struct vnodeInfo) * nr);
 		v->_bf->next = p;
@@ -320,7 +318,7 @@ extend_buf(vnode * v, _sbinfo sbinfo, char mode)
 			}
 			vi = vi->next;
 		}
-	}			//end else???
+	}
 	pthread_mutex_lock(&sbinfo->mutex);
 	vi->fd = open(sbinfo->volName, O_RDWR);
 	pthread_mutex_unlock(&sbinfo->mutex);
@@ -400,7 +398,7 @@ alloc_vi(_sbinfo sbinfo)
 
 int
 put_vnode(_sbinfo sbinfo, vnode * v, char *_vbitmap, int ID)
-{				//ævnodeåæŽäžªvnodebitmapäœåŸååé»èŸå·ïŒåœIDäžºïŒ1æ¶ïŒäžéèŠååvnode
+{
 	int fd;
 	char buf[Vnode_SIZE];
 	pthread_mutex_lock(&sbinfo->mutex);
@@ -417,7 +415,7 @@ put_vnode(_sbinfo sbinfo, vnode * v, char *_vbitmap, int ID)
 			ErrorFlag = WRITE_LVM_ERR;
 			return -1;
 		}
-	}			//end if(addr!=-1)?? 
+	}
 	if (_vbitmap && (_write(fd, _vbitmap, MaxUsers / 8, VBitmapAddr) < 0)) {
 		close(fd);
 		ErrorFlag = WRITE_LVM_ERR;
@@ -430,7 +428,6 @@ put_vnode(_sbinfo sbinfo, vnode * v, char *_vbitmap, int ID)
 int
 test_or_alloc_ID(_sbinfo sbinfo, char *name, int len, int *n, int flag)
 {
-//*nÊÇ·µ»ØµÄID£¬lenÊÇnameµÄ³€¶È¡£flag==0±íÊŸÓÃÓÚ²éÕÒ»òÕß²âÊÔ£¬flag==1,ÓÃÓÚ·ÖÅävnode
 	int count = 0;
 	int flag1 = 0;
 	(*n) = buf_hash(name, len);
@@ -450,7 +447,7 @@ test_or_alloc_ID(_sbinfo sbinfo, char *name, int len, int *n, int flag)
 
 int
 cal_alloc_chunk(_sbinfo sbinfo, vnode * v, unsigned long long  blocks)
-{				//é¢åéæ°æ®å
+{
 	int nr, i = 0, sum = 0;
 	nr = find_first_zero(sbinfo->bitmap, MaxBlocks * 8);
 	while (sum < blocks && i < MaxchunkCount) {
@@ -468,14 +465,14 @@ cal_alloc_chunk(_sbinfo sbinfo, vnode * v, unsigned long long  blocks)
 			i++;
 		while (bit(sbinfo->bitmap, nr))
 			nr++;
-	}			//end (sum<=blocks && i<MaxchunkCount)?
+	}
 	if (i == MaxchunkCount || sum < blocks) {
 		ErrorFlag = TOO_FLAGS;
 		//_Debug("too frags\n",__LINE__,__FILE__);
 		for (i = 0; i < MaxchunkCount; i++)
 			v->block[i][0] = CHUNKNULL;
 		return -1;
-	}			//end if(i==MaxchunkCount || sum<blocks)?
+	}
 	while (i < MaxchunkCount) {
 		v->block[i][0] = CHUNKNULL;
 		i++;
@@ -493,9 +490,9 @@ get_sbinfo(const char *volumeid)
 			sbinfo = sbTable.table[handle];
 			if (sbinfo && strcmp(volumeid, sbTable.table[handle]->volName) == 0)
 				break;
-		}		//end for(handle=0;handle<LvmCount;handle++)???
+		}
 		spin_rwunlock(sbTable.spin);
-	}			//end if(!spin_rdlock(sbTable.spin))???
+	}
 	else {
 		ErrorFlag = CREATING_LVM;
 		return sbinfo;
@@ -507,7 +504,7 @@ get_sbinfo(const char *volumeid)
 
 _vnodeInfo
 get_Vi(vnode * v, int key)
-{				//mode æ¯è¯»æèåïŒåœäžºè¯»çæ¶åïŒkeyäžºçŽ¢åŒ
+{
 	_vnodeInfo vi = NULL;
 	if (!v->_bf)
 		return NULL;
@@ -523,7 +520,7 @@ get_Vi(vnode * v, int key)
 
 int
 delete_vi(_sbinfo sbinfo, vnode * v, char mode, int key)
-{				//å¯èœäŒå²çª
+{
 	_vnodeInfo vi, p;
 	while (spin_wrlock(v->spin));
 	if (mode == WriteRECORD) {
@@ -534,7 +531,7 @@ delete_vi(_sbinfo sbinfo, vnode * v, char mode, int key)
             p = vi;
             vi = vi->next;
         }            
-	}			//end if(mode==WriteRECORD){????
+	}
 	else {
         vi = v->_bf;
         while(vi) {
@@ -543,7 +540,7 @@ delete_vi(_sbinfo sbinfo, vnode * v, char mode, int key)
             p = vi;
             vi = vi->next;
         }     
-	}			//end else??
+	}
 	if (!vi) {
 		spin_rwunlock(v->spin);
 		return -1;
@@ -574,7 +571,7 @@ get_dev_ID(const char *cameraid, _sbinfo * sbinf)
 		//ErrorFlag = NOT_EXIST_RECORD;
 		return -1;
 	}
-	if (!spin_rdlock(sbTable.spin)) {	//?????
+	if (!spin_rdlock(sbTable.spin)) {
 		for (handle = 0; handle < LvmCount; handle++) {
 			sbinfo = sbTable.table[handle];
 			if (sbinfo && (strcmp(sbinfo->volName, vol_path) == 0))
@@ -599,11 +596,11 @@ get_dev_ID(const char *cameraid, _sbinfo * sbinf)
 				flag = 1;
 				m = m << 16 & 0xFFFF0000;
 				break;
-			}	//end if(strcmp(????
-		}		//end if(bit???
+			} 
+		} 
 		m = (m + 1) % MaxUsers;
 		count++;
-	}			//end while????
+	}
 	if (flag == 0) {
 		ErrorFlag = NOT_EXIST_RECORD;
 		return -1;

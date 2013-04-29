@@ -42,8 +42,8 @@ struct StreamInfo {
 	_sbinfo sbinfo;
 	_vnodeInfo vi;
 	uint64_t wrAddr[2];
-	int count;			//璁℃椂鍣紝鐢ㄤ簬璁板綍tnode缂撳瓨鏁扮洰
-	tnode t[WriteLen];		//鏃堕棿缂撳瓨绌洪棿
+	int count;			//计时器，用于记录tnode缓存数目
+	tnode t[WriteLen];		//时间缓存空间
 	unsigned int lastRecordTime;
 	int BFlag;			//index for the RecordBuffer array
 	int wrFlag;

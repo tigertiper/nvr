@@ -76,12 +76,12 @@ int DeleteRecordPara(const char *cameraid, uint32_t beginTime,
 int DeleteRecordSeg(uint32_t startTime, uint32_t endTime,
 		    const char *cameraid);
 int CloseRecordSeg(uint32_t handle, StreamInfo * si);
-int GetRecordSegSize(const char *cameraid, uint32_t StartTime, uint32_t EndTime);	//ä»¥Kä¸ºå•ä½
+int GetRecordSegSize(const char *cameraid, uint32_t StartTime, uint32_t EndTime);	//ÒÔKÎªµ¥Î»
 int CreateRecordVol(char *volumeid, char *name,
 		    char *alias, short savedDays,
 		    char delPolicy, char encodeType,
 		    unsigned long long blocks);
-int DeleteRecordVol(const char *cameraid, int mode);	//0 è¡¨ç¤ºå¼ºåˆ¶ä½¿ç”¨ï¼Œ1,å¦‚æœæœ‰ä½¿ç”¨ï¼Œä¸åˆ é™¤
+int DeleteRecordVol(const char *cameraid, int mode);	//0 ±íÊ¾Ç¿ÖÆÊ¹ÓÃ£¬1,Èç¹ûÓĞÊ¹ÓÃ£¬²»É¾³ı
 int DeleteVideoVol(const char *volPath);
 
 int alloc_blocks_for_vnode(_sbinfo sbinfo, unsigned long long blocks, vnode * v);

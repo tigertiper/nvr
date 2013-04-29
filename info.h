@@ -21,12 +21,12 @@
 //#include"util.h"
 #define MaxBlocks (1024*1024/8)
 #define MaxUsers  1024
-#define CNameLength       64	//æ‘„åƒå¤´åå­—æœ€å¤§é•¿åº¦
-#define VolNameLength     64	//å½•åƒå·åå­—é•¿åº¦
-#define MaxchunkCount     32	//ä¸€è·¯æ‘„åƒå¤´çš„æœ€å¤§ç¦»æ•£chunkæ•°ç›®
-#define  FNameLength      7	//æ–‡ä»¶ç³»ç»Ÿåå­—çš„é•¿åº¦
-#define MaxDesLen        1024	//æè¿°ä¿¡æ¯çš„æœ€å¤§é•¿åº¦
-#define MaxBufBitmapLen  (1024/8)	//ç¼“å†²åŒºçš„bitmapé•¿åº¦
+#define CNameLength       64	//ÉãÏñÍ·Ãû×Ö×î´ó³¤¶È
+#define VolNameLength     64	//Â¼Ïñ¾íÃû×Ö³¤¶È
+#define MaxchunkCount     32	//Ò»Â·ÉãÏñÍ·µÄ×î´óÀëÉ¢chunkÊıÄ¿
+#define  FNameLength      7	//ÎÄ¼şÏµÍ³Ãû×ÖµÄ³¤¶È
+#define MaxDesLen        1024	//ÃèÊöĞÅÏ¢µÄ×î´ó³¤¶È
+#define MaxBufBitmapLen  (1024/8)	//»º³åÇøµÄbitmap³¤¶È
 #define BuffNodeNum        192
 #define H264 1
 #define MJPEG 2
@@ -74,27 +74,27 @@
 #define DataAddr1   (1024*SEG_SIZE+1024*SEGINFO_SIZE+FISTTIMESIZE*Tnode_SIZE+Maxtime*Tnode_SIZE)
 #define BLKGETSIZE   _IO(0x12,96)
 
-#define MALLOC_ERR 10010	//åˆ†é…å†…å­˜å¤±è´¥
-#define OPEN_FILE_ERR 10011	//æ‰“å¼€é€»è¾‘å·å¤±è´¥
-#define READ_LVM_ERR  10012	//è¯»é€»è¾‘å·å¤±è´¥
-#define NOT_MATCH_SIZE 10013	//å†æ¬¡å¯åŠ¨æ—¶ï¼Œä¸Šæ¬¡ä¿å­˜çš„é€»è¾‘å·å¤§å°ä¸å½“å‰çš„å¤§å°è¶…è¿‡1M
-#define LVM_SMALL     10014	//é€»è¾‘å·çš„å®¹é‡å¤ªå°
-#define CREATING_LVM  10015	//å½“å‰æ­£åœ¨åˆ›å»ºå¦ä¸€é€»è¾‘å·ï¼Œè¯·ç¨åå†è¯•
-#define NOT_EXIST_LVM 10015	//æ²¡æœ‰æ‰¾åˆ°å¯¹åº”é€»è¾‘å·
-#define NOT_EXIST_RECORD 10016	//å½•åƒå·æœªå­˜åœ¨
-#define CREATING_RECORD 10017	//å½“å‰æ­£åœ¨åˆ›å»ºå½•åƒå·ï¼Œè¯·ç¨åå†è¯•
-#define MAX_LVM_COUNT  10018	//æœ€è¯»åˆ›å»º256ä¸ªè§†é¢‘é€»è¾‘å·
-#define BUILD_MEM_ERR  10019	//ä¸ºè§†é¢‘å·å»ºç«‹å†…å­˜ç»“æ„å¤±è´¥
-#define WRITE_LVM_ERR  10020	//å†™é€»è¾‘å·å¤±è´¥
-#define MAX_RDWR_COUNT 10021	//å¯¹ä¸€é€»è¾‘å·è¾¾åˆ°äº†æœ€å¤§çš„è¯»å†™è·¯æ•°ï¼Œ128è·¯
-#define ALLOC_FD_ERR   10022	//åˆ†é…fdå¤±è´¥
-#define TOO_FLAGS       10023	//ä¸ºå½•åƒå·åˆ†é…çš„å—å¤ªåˆ†æ•£
-#define EXIST_SAME_NAME  10024	//å·²ç»å­˜åœ¨ç›¸åŒåå­—ã€‚
-#define ERR_HANDLE       10025	//é”™è¯¯çš„å¥æŸ„
-#define TIME_ERR      10026	//è¾“å…¥çš„å¼€å§‹æ—¶é—´æˆ–ç»“æŸæ—¶é—´æ£€ç´¢ä¸å‡ºæ•°æ®
-#define COLSE_ERR     10027	//è¿˜æœ‰è¯»æˆ–è€…å†™æœªå…³é—­ï¼Œä¸èƒ½å…³é—­å½•åƒå·
+#define MALLOC_ERR 10010	//·ÖÅäÄÚ´æÊ§°Ü
+#define OPEN_FILE_ERR 10011	//´ò¿ªÂß¼­¾íÊ§°Ü
+#define READ_LVM_ERR  10012	//¶ÁÂß¼­¾íÊ§°Ü
+#define NOT_MATCH_SIZE 10013	//ÔÙ´ÎÆô¶¯Ê±£¬ÉÏ´Î±£´æµÄÂß¼­¾í´óĞ¡Óëµ±Ç°µÄ´óĞ¡³¬¹ı1M
+#define LVM_SMALL     10014	//Âß¼­¾íµÄÈİÁ¿Ì«Ğ¡
+#define CREATING_LVM  10015	//µ±Ç°ÕıÔÚ´´½¨ÁíÒ»Âß¼­¾í£¬ÇëÉÔºóÔÙÊÔ
+#define NOT_EXIST_LVM 10015	//Ã»ÓĞÕÒµ½¶ÔÓ¦Âß¼­¾í
+#define NOT_EXIST_RECORD 10016	//Â¼Ïñ¾íÎ´´æÔÚ
+#define CREATING_RECORD 10017	//µ±Ç°ÕıÔÚ´´½¨Â¼Ïñ¾í£¬ÇëÉÔºóÔÙÊÔ
+#define MAX_LVM_COUNT  10018	//×î¶Á´´½¨256¸öÊÓÆµÂß¼­¾í
+#define BUILD_MEM_ERR  10019	//ÎªÊÓÆµ¾í½¨Á¢ÄÚ´æ½á¹¹Ê§°Ü
+#define WRITE_LVM_ERR  10020	//Ğ´Âß¼­¾íÊ§°Ü
+#define MAX_RDWR_COUNT 10021	//¶ÔÒ»Âß¼­¾í´ïµ½ÁË×î´óµÄ¶ÁĞ´Â·Êı£¬128Â·
+#define ALLOC_FD_ERR   10022	//·ÖÅäfdÊ§°Ü
+#define TOO_FLAGS       10023	//ÎªÂ¼Ïñ¾í·ÖÅäµÄ¿éÌ«·ÖÉ¢
+#define EXIST_SAME_NAME  10024	//ÒÑ¾­´æÔÚÏàÍ¬Ãû×Ö¡£
+#define ERR_HANDLE       10025	//´íÎóµÄ¾ä±ú
+#define TIME_ERR      10026	//ÊäÈëµÄ¿ªÊ¼Ê±¼ä»ò½áÊøÊ±¼ä¼ìË÷²»³öÊı¾İ
+#define COLSE_ERR     10027	//»¹ÓĞ¶Á»òÕßĞ´Î´¹Ø±Õ£¬²»ÄÜ¹Ø±ÕÂ¼Ïñ¾í
 #define LOCK_ERR      10028	//
-#define NOT_EXIST_CAMERA   10029	//åœ¨é…ç½®æ–‡ä»¶ä¸­æœªæ‰¾åˆ°æ‘„åƒå¤´çš„è®°å½•ä¿¡æ¯
+#define NOT_EXIST_CAMERA   10029	//ÔÚÅäÖÃÎÄ¼şÖĞÎ´ÕÒµ½ÉãÏñÍ·µÄ¼ÇÂ¼ĞÅÏ¢
 #define ERR_TIME_INTERL 10031
 #define NVR_CREATWRITEDATATHREADFAIL 10030
 #define SPACE_NOT_ENOUGH 10032
@@ -128,24 +128,24 @@ typedef pthread_mutex_t spinlock_t;
 typedef pthread_rwlock_t spinrwlock_t;
 
 typedef struct superBlcok {
-    char fileSystemName[FNameLength];	//æ–‡ä»¶ç³»ç»Ÿç±»å‹
-    unsigned long long totalSize;	//æ€»å®¹é‡
-    short vnodeCount;		//å·²åˆ†é…çš„vnode
-    long long blockSize;	//æ•°æ®å—å¤§å°
-    int mTime;			//æœ€åä¸€æ¬¡è£…è½½fsçš„æ—¶é—´
-    int wTime;			//è¶…çº§å—çš„æœ€åä¸€æ¬¡å†™å…¥æ—¶é—´
-    short magic;		//ç”¨æ¥è¯†åˆ«æ–‡ä»¶ç³»ç»Ÿçš„å¹»æ•°
-// long long  dataAddr;//æ•°æ®å—çš„èµ·å§‹åœ°å€
-    long long dataBlocksCount;	//æ€»çš„å­˜å‚¨æ•°æ®å—çš„æ•°ç›®
-    long long freeBlocksCount;	//ç©ºé—²æ•°æ®å—çš„æ•°ç›®
-    int interval;		//å†™å›ç£ç›˜çš„é—´éš”æ—¶é—´
+    char fileSystemName[FNameLength];	//ÎÄ¼şÏµÍ³ÀàĞÍ
+    unsigned long long totalSize;	//×ÜÈİÁ¿
+    short vnodeCount;		//ÒÑ·ÖÅäµÄvnode
+    long long blockSize;	//Êı¾İ¿é´óĞ¡
+    int mTime;			//×îºóÒ»´Î×°ÔØfsµÄÊ±¼ä
+    int wTime;			//³¬¼¶¿éµÄ×îºóÒ»´ÎĞ´ÈëÊ±¼ä
+    short magic;		//ÓÃÀ´Ê¶±ğÎÄ¼şÏµÍ³µÄ»ÃÊı
+// long long  dataAddr;//Êı¾İ¿éµÄÆğÊ¼µØÖ·
+    long long dataBlocksCount;	//×ÜµÄ´æ´¢Êı¾İ¿éµÄÊıÄ¿
+    long long freeBlocksCount;	//¿ÕÏĞÊı¾İ¿éµÄÊıÄ¿
+    int interval;		//Ğ´»Ø´ÅÅÌµÄ¼ä¸ôÊ±¼ä
 } SBlock;
 
-typedef struct initInfo {	//é…ç½®æ–‡ä»¶çš„è®°å½•ç»“æ„
+typedef struct initInfo {	//ÅäÖÃÎÄ¼şµÄ¼ÇÂ¼½á¹¹
     int mode;
-    char volName[VolNameLength];	//æ‰€åœ¨å·åç§°
-    char fileSystemName[FNameLength];	//æ–‡ä»¶ç³»ç»Ÿç±»å‹
-    unsigned long long size;	//æ€»å®¹é‡
+    char volName[VolNameLength];	//ËùÔÚ¾íÃû³Æ
+    char fileSystemName[FNameLength];	//ÎÄ¼şÏµÍ³ÀàĞÍ
+    unsigned long long size;	//×ÜÈİÁ¿
 } _initInfo;
 
 typedef struct timeNode {
@@ -157,49 +157,49 @@ typedef struct timeNode {
 typedef struct vnodeInfo {
     char key;
     short ID;
-    int fd;			//æ‰“å¼€çš„æ–‡ä»¶æè¿°ç¬¦
-    char status;		//1è¡¨ç¤ºç”¨äºå†™å½•åƒï¼Œ0è¡¨ç¤ºè¯»å½•åƒ
-    int count;			//è®¡æ—¶å™¨ï¼Œç”¨äºè®°å½•tnodeç¼“å­˜æ•°ç›®
-    tnode t[TimeBuffSize];	//æ—¶é—´ç¼“å­˜ç©ºé—´
+    int fd;			//´ò¿ªµÄÎÄ¼şÃèÊö·û
+    char status;		//1±íÊ¾ÓÃÓÚĞ´Â¼Ïñ£¬0±íÊ¾¶ÁÂ¼Ïñ
+    int count;			//¼ÆÊ±Æ÷£¬ÓÃÓÚ¼ÇÂ¼tnode»º´æÊıÄ¿
+    tnode t[TimeBuffSize];	//Ê±¼ä»º´æ¿Õ¼ä
     int beginTime;
     int endTime;
     union {
 	unsigned long long nextTimeAddr;
 	char is_starttime;
     };
-    struct vnodeInfo *next;	//ä½¿ç”¨é“¾è¡¨ç»“æ„è¿æ¥ é“¾è¡¨æœ‰åº
+    struct vnodeInfo *next;	//Ê¹ÓÃÁ´±í½á¹¹Á¬½Ó Á´±íÓĞĞò
     pthread_mutex_t mutex;
 } *_vnodeInfo;
 
 typedef struct _vnode {
-    char cameraid[CNameLength];	//æ‘„åƒå¤´åå­—
-    char alias[CNameLength];	//æ‘„åƒå¤´åˆ«å
-    char volName[VolNameLength];	//æ‰€åœ¨å·åç§°
-    int block[MaxchunkCount][2];	//åˆ†é…ç»™è¯¥vnodeæŒ‡ç¤ºå½•åƒå·çš„å—ï¼Œç”¨å—å·è®°å½•
-    long long storeAddr;	//ä¸‹ä¸€æ¬¡å†™å…¥åœ°å€
-    long long curSnode;		//å½“å‰snodeå·
-    long long firstIndex;	//æ—¶é—´ç´¢å¼•è¡¨é¦–åœ°å€
-    long long queryAdd;		//ä¸‹ä¸€æ¬¡å†™æ—¶é—´ç´¢å¼•åœ°å€
-    char isRecycle;		//å›è½¬æ ‡å¿—ä½
-    short savedDays;		//å½•åƒä¿å­˜å¤©æ•°
-    char delPolicy;		//å½•åƒè¦†ç›–ç­–ç•¥
-    char encodeType;		//ç¼–ç æ ¼å¼ #define H264 1ï¼›
-//#define MJPEG 2ï¼›#define MPEG4 3ï¼›
-    short count;		//ä¸€çº§ç´¢å¼•çš„è®¡æ•°å™¨
-    short wr_count;		//ä¸€çº§ç´¢å¼•çš„å†™ä½ç½®
+    char cameraid[CNameLength];	//ÉãÏñÍ·Ãû×Ö
+    char alias[CNameLength];	//ÉãÏñÍ·±ğÃû
+    char volName[VolNameLength];	//ËùÔÚ¾íÃû³Æ
+    int block[MaxchunkCount][2];	//·ÖÅä¸ø¸ÃvnodeÖ¸Ê¾Â¼Ïñ¾íµÄ¿é£¬ÓÃ¿éºÅ¼ÇÂ¼
+    long long storeAddr;	//ÏÂÒ»´ÎĞ´ÈëµØÖ·
+    long long curSnode;		//µ±Ç°snodeºÅ
+    long long firstIndex;	//Ê±¼äË÷Òı±íÊ×µØÖ·
+    long long queryAdd;		//ÏÂÒ»´ÎĞ´Ê±¼äË÷ÒıµØÖ·
+    char isRecycle;		//»Ø×ª±êÖ¾Î»
+    short savedDays;		//Â¼Ïñ±£´æÌìÊı
+    char delPolicy;		//Â¼Ïñ¸²¸Ç²ßÂÔ
+    char encodeType;		//±àÂë¸ñÊ½ #define H264 1£»
+//#define MJPEG 2£»#define MPEG4 3£»
+    short count;		//Ò»¼¶Ë÷ÒıµÄ¼ÆÊıÆ÷
+    short wr_count;		//Ò»¼¶Ë÷ÒıµÄĞ´Î»ÖÃ
     char SnodeRecycle;		////1 Recycled; 0 notRecycled 
-    _vnodeInfo _bf;		//æŒ‡å‘å¯¹åº”çš„ç¼“å†²åŒº
+    _vnodeInfo _bf;		//Ö¸Ïò¶ÔÓ¦µÄ»º³åÇø
     spinrwlock_t spin;
     char status; 
 } vnode;
 
 /*typedef struct _Voluminfo {
-	char cameraid[CNameLength];	//æ‘„åƒå¤´åå­—
-	char alias[CNameLength];	//æ‘„åƒå¤´åˆ«å
-	char volName[VolNameLength];	//æ‰€åœ¨å·åç§°
-	short savedDays;	//å½•åƒä¿å­˜å¤©æ•°
-	char delPolicy;		//å½•åƒè¦†ç›–ç­–ç•¥
-	char encodeType;	//ç¼–ç æ ¼å¼ #define H264 1ï¼›
+	char cameraid[CNameLength];	//ÉãÏñÍ·Ãû×Ö
+	char alias[CNameLength];	//ÉãÏñÍ·±ğÃû
+	char volName[VolNameLength];	//ËùÔÚ¾íÃû³Æ
+	short savedDays;	//Â¼Ïñ±£´æÌìÊı
+	char delPolicy;		//Â¼Ïñ¸²¸Ç²ßÂÔ
+	char encodeType;	//±àÂë¸ñÊ½ #define H264 1£»
 } Voluminfo;*/
 
 typedef struct bufferHead {
@@ -208,15 +208,15 @@ typedef struct bufferHead {
 } *bfHead;
 
 typedef struct sbInfo {
-    SBlock *_es;		//è¶…çº§å—çš„æŒ‡é’ˆ
-    char volName[VolNameLength];	//æ‰€åœ¨å·åç§°
-    char *bitmap;		//ä½å›¾çš„ç¼“å†²åŒº
-    char *vnodemapping;		//vnodeæ˜ å°„çš„ç¼“å­˜åŒº
-    char *vnodeTable;		//vnodeçš„ç¼“å†²åŒº
-    //pthread_mutex_t spinSuperblock;       //è¶…çº§å—å’Œä½å›¾çš„é”
-    //pthread_rwlock_t spinvnode;   //vbitmapå’Œvnodeçš„ä½å›¾çš„é”
-    bfHead _bh;			//ç”¨äºç®¡ç†ç¼“å†²åŒºçš„ç»“æ„ä½“
-    char *_bf;			//å…±äº«çš„ç¼“å†²åŒº
+    SBlock *_es;		//³¬¼¶¿éµÄÖ¸Õë
+    char volName[VolNameLength];	//ËùÔÚ¾íÃû³Æ
+    char *bitmap;		//Î»Í¼µÄ»º³åÇø
+    char *vnodemapping;		//vnodeÓ³ÉäµÄ»º´æÇø
+    char *vnodeTable;		//vnodeµÄ»º³åÇø
+    //pthread_mutex_t spinSuperblock;       //³¬¼¶¿éºÍÎ»Í¼µÄËø
+    //pthread_rwlock_t spinvnode;   //vbitmapºÍvnodeµÄÎ»Í¼µÄËø
+    bfHead _bh;			//ÓÃÓÚ¹ÜÀí»º³åÇøµÄ½á¹¹Ìå
+    char *_bf;			//¹²ÏíµÄ»º³åÇø
     struct sbInfo *next;
     pthread_mutex_t mutex;	//for open volName mutex,
 } *_sbinfo;
@@ -232,13 +232,13 @@ typedef struct DateSegIndex {
 } segindex;
 
 typedef struct DataSegInfo {
-    int size;			//å¯¹åº”çš„æ•°æ®æ®µå¤´å¤§å°
-    int frame;			//å¸§ç‡,å•ä½ä¸ºï¼šå¸§/ç§’
-    short width;		//åˆ†è¾¨ç‡
-    short height;		//åˆ†è¾¨ç‡
-    char des[MaxDesLen];	//æè¿°ä¿¡æ¯
+    int size;			//¶ÔÓ¦µÄÊı¾İ¶ÎÍ·´óĞ¡
+    int frame;			//Ö¡ÂÊ,µ¥Î»Îª£ºÖ¡/Ãë
+    short width;		//·Ö±æÂÊ
+    short height;		//·Ö±æÂÊ
+    char des[MaxDesLen];	//ÃèÊöĞÅÏ¢
 } seginfo;
-//å…¨å±€å˜é‡
+//È«¾Ö±äÁ¿
 
 
 extern SBTable sbTable;

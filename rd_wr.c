@@ -51,16 +51,16 @@ get_vnode(_sbinfo sbinfo, vnode * v, int ID)
 
 inline int
 get_bitmap(int fd, _sbinfo sbinfo)
-{				//è¯»å–é€»è¾‘å·çš„bitmapã€‚
+{				//¶ÁÈ¡Âß¼­¾íµÄbitmap¡£
 	return _read(fd, sbinfo->bitmap, MaxBlocks, BitmapAddr);
 
 }
 
 /*
-åœ¨å†…å­˜ä¸­ç”³è¯·ä¸€ä¸ªç¼“å†²åŒºï¼Œç”¨äºè¯»å†™ã€‚
-æ¯è¯»ä¸€è·¯è§†é¢‘æ—¶ï¼Œåˆ†é…ä¸€ä¸ªnodeï¼Œè¿™ä¸ªnodeä»ç¼“å­˜æ± ä¸­åˆ†é…ã€‚
-sbinfo->_bhä¸ºbfHeadç»“æ„ä½“ï¼Œç”¨äºç®¡ç†è¿™ä¸ªç¼“å†²åŒºï¼Œ
-sbinfo->_bfæŒ‡å‘è¿™ä¸ªç¼“å†²åŒºã€‚
+ÔÚÄÚ´æÖĞÉêÇëÒ»¸ö»º³åÇø£¬ÓÃÓÚ¶ÁĞ´¡£
+Ã¿¶ÁÒ»Â·ÊÓÆµÊ±£¬·ÖÅäÒ»¸önode£¬Õâ¸önode´Ó»º´æ³ØÖĞ·ÖÅä¡£
+sbinfo->_bhÎªbfHead½á¹¹Ìå£¬ÓÃÓÚ¹ÜÀíÕâ¸ö»º³åÇø£¬
+sbinfo->_bfÖ¸ÏòÕâ¸ö»º³åÇø¡£
 */
 int
 get_buf(_sbinfo sbinfo)
@@ -71,7 +71,7 @@ get_buf(_sbinfo sbinfo)
 		return -1;
 	}
 	size = (sizeof(struct vnodeInfo)) * BuffNodeNum;
-	//åˆå§‹åŒ–bfHeadç»“æ„ä½“ã€‚
+	//³õÊ¼»¯bfHead½á¹¹Ìå¡£
 	memset(sbinfo->_bh->map, 0, MaxBufBitmapLen);
 	//   spin_rwinit(sbinfo->_bh->spin);
 	pthread_rwlock_init(&sbinfo->_bh->spin, NULL);
@@ -86,7 +86,7 @@ get_buf(_sbinfo sbinfo)
 
 int
 vnodes_build(_sbinfo sbinfo)
-{				//æ ¹æ®ç¡¬ç›˜ç»“æ„ä¿¡æ¯ï¼Œå»ºç«‹vnodeå†…å­˜ç»“æ„
+{				//¸ù¾İÓ²ÅÌ½á¹¹ĞÅÏ¢£¬½¨Á¢vnodeÄÚ´æ½á¹¹
 	int i = 0;
 	int fd1;
 	char *buf;
@@ -111,12 +111,12 @@ vnodes_build(_sbinfo sbinfo)
 		goto err1;
 	}
 	while (i < MaxUsers) {
-		if (bit(sbinfo->vnodemapping, i)) {	//æœ‰vnode
+		if (bit(sbinfo->vnodemapping, i)) {	//ÓĞvnode
 			v = (vnode *) (sbinfo->vnodeTable + i * sizeof(vnode));
 			buf_to_vnode(buf + i * Vnode_SIZE, v);
 		}
 		i++;
-	}			//end while(i<MaxUsers)?
+	} 
 	close(fd1);
 	free(buf);
 	return 0;
@@ -129,39 +129,39 @@ vnodes_build(_sbinfo sbinfo)
 
 inline int
 get_vbitmap(int fd, _sbinfo sbinfo)
-{				//ä»é€»è¾‘å·ä¸­è¯»å–vbitmap
+{				//´ÓÂß¼­¾íÖĞ¶ÁÈ¡vbitmap
 	return _read(fd, sbinfo->vnodemapping, MaxUsers / 8, VBitmapAddr);
 }
 
 /*
-   å»ºç«‹é€»è¾‘å·çš„å†…å­˜ç»“æ„ï¼Œå›´ç»•sbinfoç»“æ„è¿›è¡Œã€‚
+   ½¨Á¢Âß¼­¾íµÄÄÚ´æ½á¹¹£¬Î§ÈÆsbinfo½á¹¹½øĞĞ¡£
 */
 int
 men_build(SBlock * sb, _sbinfo sbinfo, char *volname, int flag)
-{				//flag==0,è¡¨ç¤ºç¡¬ç›˜ç»“æ„æœªå»ºç«‹ã€‚flagï¼ï¼1æˆ–è€…å…¶ä»–,è¡¨ç¤ºå·²ç»å»ºç«‹
+{				//flag==0,±íÊ¾Ó²ÅÌ½á¹¹Î´½¨Á¢¡£flag£½£½1»òÕßÆäËû,±íÊ¾ÒÑ¾­½¨Á¢
 	int fd;
-	sbinfo->_es = sb;	//æŒ‡å‘è¶…çº§å—
-	memcpy(sbinfo->volName, volname, VolNameLength);	//æ‹·è´é€»è¾‘å·åå­—
-	if ((sbinfo->bitmap = malloc(sizeof(char) * (MaxBlocks + MaxUsers / 8))) == NULL) {	//å°†bitmapå’Œvbitmapçš„ç©ºé—´ä¸€èµ·ç”³è¯·ã€‚
+	sbinfo->_es = sb;	//Ö¸Ïò³¬¼¶¿é
+	memcpy(sbinfo->volName, volname, VolNameLength);	//¿½±´Âß¼­¾íÃû×Ö
+	if ((sbinfo->bitmap = malloc(sizeof(char) * (MaxBlocks + MaxUsers / 8))) == NULL) {	//½«bitmapºÍvbitmapµÄ¿Õ¼äÒ»ÆğÉêÇë¡£
 		ErrorFlag = MALLOC_ERR;
 		goto err1;
 	}
 	
 	sbinfo->vnodemapping = sbinfo->bitmap + MaxBlocks;
-	if ((sbinfo->vnodeTable = (char *)malloc(sizeof(vnode) * MaxUsers)) == NULL) {	//ç”³è¯·vnodeçš„ç¼“å­˜
+	if ((sbinfo->vnodeTable = (char *)malloc(sizeof(vnode) * MaxUsers)) == NULL) {	//ÉêÇëvnodeµÄ»º´æ
 		ErrorFlag = MALLOC_ERR;
 		goto err2;
 	}
 
-	if (flag == 0) {	//ç¡¬ç›˜ç»“æ„æ²¡æœ‰å»ºç«‹ï¼Œå°±éœ€è¦åˆå§‹åŒ–ç¡¬ç›˜ï¼ŒæŠŠsuperblockï¼Œbitmapå’Œvbitmapå†™å›é€»è¾‘å·
-		memset(sbinfo->bitmap, 0, (uint32_t) (MaxBlocks + MaxUsers / 8));	//å°†bitmapå’Œvbitmapå…¨éƒ¨æ¸…é›¶
-		if (put_sb(sbinfo, NULL))	//å°†superblockå’Œbitmapå†™å›
+	if (flag == 0) {	//Ó²ÅÌ½á¹¹Ã»ÓĞ½¨Á¢£¬¾ÍĞèÒª³õÊ¼»¯Ó²ÅÌ£¬°Ñsuperblock£¬bitmapºÍvbitmapĞ´»ØÂß¼­¾í
+		memset(sbinfo->bitmap, 0, (uint32_t) (MaxBlocks + MaxUsers / 8));	//½«bitmapºÍvbitmapÈ«²¿ÇåÁã
+		if (put_sb(sbinfo, NULL))	//½«superblockºÍbitmapĞ´»Ø
 			goto err3;
 		if (put_vnode(sbinfo, NULL, sbinfo->vnodemapping, -1) < 0)
 			goto err3;
 		if (get_buf(sbinfo) < 0)
 			goto err3;
-	}			//end if(flag==0)?
+	} 
 	else {
 		pthread_mutex_lock(&sbinfo->mutex);
 		if ((fd = open(sbinfo->volName, O_RDONLY)) < 0) {
@@ -183,7 +183,7 @@ men_build(SBlock * sb, _sbinfo sbinfo, char *volname, int flag)
 		close(fd);
 		if (vnodes_build(sbinfo) < 0)
 			goto err3;
-	}			//end else?
+	} 
 	return 0;
       err3:
 	free(sbinfo->vnodeTable);
@@ -238,7 +238,7 @@ init(const char *volume_path)
 	int i, m = 0;
 	if (!InitFlag) {
 		for (i = 0; i < LvmCount; i++)
-			sbTable.table[i] = NULL;	//åˆå§‹åŒ–SBtable
+			sbTable.table[i] = NULL;	//³õÊ¼»¯SBtable
 		spin_rwinit(sbTable.spin);
 		InitFlag = 1;
 	}
@@ -249,29 +249,29 @@ init(const char *volume_path)
 	strcpy(info->volName, volume_path);
 	strcpy(info->fileSystemName, FILE_SYS_NAME);
 	info->mode = 1;
-	if ((sb = malloc(sizeof(SBlock))) == NULL) {	//ç”³è¯·è¶…çº§å—å†…å­˜
+	if ((sb = malloc(sizeof(SBlock))) == NULL) {	//ÉêÇë³¬¼¶¿éÄÚ´æ
 		ErrorFlag = MALLOC_ERR;
 		goto err1;
-	}			//end ifï¼Ÿ
+	} 
 	if (!is_vedio_LVM(info->volName, sb)) {
 		free(sb);
 		goto err1;
 	}
 	//  info->size=get_lv_size(info->volName);
 
-	if ((sbinfo = malloc(sizeof(struct sbInfo))) == NULL) {	//ç”³è¯·è¶…çº§å—ä¿¡æ¯å†…å­˜
+	if ((sbinfo = malloc(sizeof(struct sbInfo))) == NULL) {	//ÉêÇë³¬¼¶¿éĞÅÏ¢ÄÚ´æ
 		ErrorFlag = MALLOC_ERR;
 		free(sb);
 		goto err1;
-	}			//end ifï¼Ÿ
+	} 
 	//added by wsr 20121029
 	//memset(&sbinfo, 0, sizeof(struct sbInfo));
 	//end
 	pthread_mutex_init(&sbinfo->mutex, NULL);
 	/*  
-	   å°†è¶…çº§å—ä¿¡æ¯sbinfoä¿å­˜åœ¨å…¨å±€é“¾è¡¨å’Œtableæ•°ç»„ä¸­
+	   ½«³¬¼¶¿éĞÅÏ¢sbinfo±£´æÔÚÈ«¾ÖÁ´±íºÍtableÊı×éÖĞ
 	 */
-	if (!spin_wrlock(sbTable.spin)) {	//åŠ é”
+	if (!spin_wrlock(sbTable.spin)) {	//¼ÓËø
 		while (m < LvmCount && sbTable.table[m])
 			m++;
 		if (m >= LvmCount) {
@@ -280,12 +280,12 @@ init(const char *volume_path)
 			goto err3;
 		}
 		sbTable.table[m] = sbinfo;
-		spin_rwunlock(sbTable.spin);	//è§£é”
+		spin_rwunlock(sbTable.spin);	//½âËø
 	} else {
 		ErrorFlag = CREATING_LVM;
 		goto err3;
 	}
-	if (men_build(sb, sbinfo, info->volName, info->mode) < 0) {	//åœ¨å†…å­˜ä¸­å»ºç«‹é™¤superblockä¹‹å¤–çš„å†…å­˜ç»“æ„
+	if (men_build(sb, sbinfo, info->volName, info->mode) < 0) {	//ÔÚÄÚ´æÖĞ½¨Á¢³ısuperblockÖ®ÍâµÄÄÚ´æ½á¹¹
 		ErrorFlag = BUILD_MEM_ERR;
 		goto err3;
 	}
@@ -498,12 +498,12 @@ write_back_tnodes(_sbinfo sbinfo, vnode * v, _vnodeInfo vi, StreamInfo * si)
 	if (count == 0 && si->count < WriteLen)
 		return 0;
 	vi_addr = (char *)&si->t[si->count - count];
-	if (v->count == 0) {	//å»ºç«‹ä¸€çº§ç´¢å¼•
+	if (v->count == 0) {	//½¨Á¢Ò»¼¶Ë÷Òı
 		if (__write(vi->fd, (char *)&(si->t[0]), Tnode_SIZE,
 			    (si->v->firstIndex - FISTTIMESIZE * Tnode_SIZE + si->v->wr_count * Tnode_SIZE), &vi->mutex) < 0) {
 			ErrorFlag = WRITE_LVM_ERR;
 			goto err;
-		}		//end if(_write)?
+		} 
 		v->count = 1;
 		v->wr_count++;
 	}
@@ -536,7 +536,7 @@ write_back_tnodes(_sbinfo sbinfo, vnode * v, _vnodeInfo vi, StreamInfo * si)
 		     (v->firstIndex - FISTTIMESIZE * Tnode_SIZE + v->wr_count * Tnode_SIZE), &vi->mutex) < 0) {
 			ErrorFlag = WRITE_LVM_ERR;
 			goto err;
-		}		//end if(_write)?
+		} 
 		if (v->wr_count == 0)
 			v->count = 2;
 		v->wr_count++;
@@ -544,7 +544,7 @@ write_back_tnodes(_sbinfo sbinfo, vnode * v, _vnodeInfo vi, StreamInfo * si)
 			// v->count=2;
 			v->wr_count = v->wr_count % _FISTTIMESIZE(v);
 		}
-	}			//end if(count1>_TLEN(v)){??
+	} 
 	if ((v->queryAdd + count * Tnode_SIZE) >= (v->firstIndex + _Maxtime(v) * Tnode_SIZE)) {
 		size_ = (v->firstIndex + _Maxtime(v) * Tnode_SIZE - v->queryAdd);
 		size_ = (size_ / Tnode_SIZE) * Tnode_SIZE;
@@ -558,14 +558,14 @@ write_back_tnodes(_sbinfo sbinfo, vnode * v, _vnodeInfo vi, StreamInfo * si)
 		}
 		v->isRecycle = ISRecycled;
 		v->queryAdd = v->firstIndex + count * Tnode_SIZE - size_;
-	}			//end if((v->queryAdd+TimeBuffSize???
+	} 
 	else {
 		if (__write(vi->fd, vi_addr, count * Tnode_SIZE, v->queryAdd, &vi->mutex) < 0) {
 			ErrorFlag = WRITE_LVM_ERR;
 			goto err;
 		}
 		v->queryAdd = v->queryAdd + count * Tnode_SIZE;
-	}			//end else??
+	} 
 	//vi->count=0;
 
 	return count;
@@ -594,7 +594,7 @@ writeTnodeToBuf(StreamInfo * si, uint32_t startTime, int size)
 		si->vi->t[si->vi->count].len = size;
 	}
 	si->vi->count++;
-	/*if(si->v->count==0){//å»ºç«‹ä¸€çº§ç´¢å¼•
+	/*if(si->v->count==0){//½¨Á¢Ò»¼¶Ë÷Òı
 	   if(_write(si->vi->fd,(char *)&(si->vi->t[si->vi->count-1]),Tnode_SIZE,
 	   (si->v->firstIndex-FISTTIMESIZE*Tnode_SIZE+si->v->wr_count*Tnode_SIZE))<0){
 	   ErrorFlag=WRITE_LVM_ERR;
@@ -672,44 +672,8 @@ initWriteStream(unsigned int handle, vnode ** v, int *ID, _sbinfo * sbinfo, _vno
 }
 
 /*
-int WriteStream(uint32_t handle, uint32_t startTime, char *buf, unsigned int size)
-{
-	vnode * v;
-      int ID;
-     _sbinfo sbinfo;
-          _vnodeInfo vi;
-     if(handle==-1) {
-       ErrorFlag=ERR_HANDLE;
-       return -1;
-     }
-     sbinfo=SBINFO(handle);
-     ID=_ID(handle);
-   if(ID>=MaxUsers && !bit(sbinfo->vnodemapping,ID)){
-          ErrorFlag=ERR_HANDLE;
-                  goto err;
-         }
-      v=(vnode *)(sbinfo->vnodeTable+ID*sizeof(vnode));     
-// snode not set startTime
-      if((vi=get_Vi(v,handle & 0x0000FF))==NULL){
-           ErrorFlag=ERR_HANDLE;
-           goto err;
-        }
-   if(vi->is_starttime==NOTSET && write_snode(sbinfo,v,vi,startTime,startTime+1,0)<0)
-          goto err;
-//snode not set startTime end?
-     if(write_back_tnode(sbinfo,v,vi,startTime,size,ID)<0){
-           // _Debug("write tnode err!\n",__LINE__,__FILE__);
-            goto err;
-                   }
-     if(write_data(sbinfo,v,vi,buf,size)<0) goto err;
-          return 0;
-err:
-         return -1;
-}*/
-
-/*
-é€šè¿‡èµ·å§‹æ—¶é—´å’Œç»“æŸæ—¶é—´æ‰¾åˆ°å¯¹åº”çš„snodeï¼Œ
-å¦‚æœstartTimeåˆ°endTimeä¸­é—´æœ‰å¤šä¸ªsnodeï¼Œè¿”å›ç¬¬äºŒä¸ªçš„startTimeã€‚
+Í¨¹ıÆğÊ¼Ê±¼äºÍ½áÊøÊ±¼äÕÒµ½¶ÔÓ¦µÄsnode£¬
+Èç¹ûstartTimeµ½endTimeÖĞ¼äÓĞ¶à¸ösnode£¬·µ»ØµÚ¶ş¸öµÄstartTime¡£
 */
 uint32_t
 find_snode(_sbinfo sbinfo, vnode * v, int fd, char *_buf, uint32_t startTime, uint32_t endTime, int *n, segindex * index, segindex * index1)
@@ -718,9 +682,9 @@ find_snode(_sbinfo sbinfo, vnode * v, int fd, char *_buf, uint32_t startTime, ui
 	uint32_t return_time, t;
 	int len, m, h, k;
 	segindex *si;
-	addr = v->block[0][0] * (sbinfo->_es->blockSize) + DataAddr;	//æ‰¾åˆ°snodeçš„èµ·å§‹åœ°å€
+	addr = v->block[0][0] * (sbinfo->_es->blockSize) + DataAddr;	//ÕÒµ½snodeµÄÆğÊ¼µØÖ·
 	if (v->SnodeRecycle == ISRecycled) {
-		len = SEG_SIZE * 1024;	//å¦‚æœsnodeçš„ç©ºé—´å·²ç»è¦†ç›–
+		len = SEG_SIZE * 1024;	//Èç¹ûsnodeµÄ¿Õ¼äÒÑ¾­¸²¸Ç
 		(*n) = (v->curSnode - ((v->block[0][0]) * (sbinfo->_es->blockSize) + DataAddr)) / SEG_SIZE;
 		//          h=((*n)-1)<0?1023:((*n)-1);
 	} else {
@@ -728,7 +692,7 @@ find_snode(_sbinfo sbinfo, vnode * v, int fd, char *_buf, uint32_t startTime, ui
 		(*n) = 0;
 		// h=len/SEG_SIZE-1;
 	}
-	if (_read(fd, _buf, len, addr) < 0) {	//snodeså…¨éƒ¨è¯»åˆ°buf
+	if (_read(fd, _buf, len, addr) < 0) {	//snodesÈ«²¿¶Áµ½buf
 		ErrorFlag = READ_LVM_ERR;
 		return ERR_RETURN;
 	}
@@ -736,7 +700,7 @@ find_snode(_sbinfo sbinfo, vnode * v, int fd, char *_buf, uint32_t startTime, ui
 	m = len / SEG_SIZE;
 	for (; m > 0; m--) {
 		si = (segindex *) (_buf + (*n) * SEG_SIZE);
-		if (si->start_time == 0 || endTime < si->start_time || startTime > si->end_time || si->start_time > si->end_time) {	//æ³¨æ„åŒºé—´ï¼
+		if (si->start_time == 0 || endTime < si->start_time || startTime > si->end_time || si->start_time > si->end_time) {	//×¢ÒâÇø¼ä£½
 			(*n) = (++(*n)) % 1024;
 			continue;
 		}
@@ -774,7 +738,7 @@ find_snode(_sbinfo sbinfo, vnode * v, int fd, char *_buf, uint32_t startTime, ui
 				}
 				if (si->start_time > t && si->start_time <= endTime)
 					return_time = si->start_time;
-				else	//è¿™å·²ç»æ˜¯æœ€åä¸€ä¸ªsnodeï¼Œæ‰¾ä¸åˆ°ä¸‹ä¸€ä¸ªsnode
+				else	//ÕâÒÑ¾­ÊÇ×îºóÒ»¸ösnode£¬ÕÒ²»µ½ÏÂÒ»¸ösnode
 					return_time = startTime;
 				break;
 			}
@@ -786,13 +750,13 @@ find_snode(_sbinfo sbinfo, vnode * v, int fd, char *_buf, uint32_t startTime, ui
 }
 
 /*
-handle |16ä½ID|ï¼‹ï½œ8ä½LVMç¼–å·ï½œï¼‹ï½œ8ä½æœªä½¿ç”¨ï½œ
+handle |16Î»ID|£«£ü8Î»LVM±àºÅ£ü£«£ü8Î»Î´Ê¹ÓÃ£ü
 */
 
 int
 read_tnode(unsigned int timeBegin, _vnodeInfo vi, vnode * v, long long addr, unsigned long long *beginTime_addr, unsigned long long *next_addr, int mode)
 {
-//mode==1 è¡¨ç¤ºä¸éœ€è¦timeBeginæœ‰æ•ˆï¼Œmodeï¼ï¼0ï¼Œè¡¨ç¤ºæ— æ•ˆã€‚
+//mode==1 ±íÊ¾²»ĞèÒªtimeBeginÓĞĞ§£¬mode£½£½0£¬±íÊ¾ÎŞĞ§¡£
 	uint32_t size, end;
 	uint64_t addr1;
 	int j;
@@ -806,8 +770,8 @@ read_tnode(unsigned int timeBegin, _vnodeInfo vi, vnode * v, long long addr, uns
 				size = (v->firstIndex + _Maxtime(v) * Tnode_SIZE) - addr;
 				addr1 = v->firstIndex;
 				flag1 = 1;
-			}	//end if((addr+size)>( ???
-		}		//if(v->isRecycle==ISRecycled)???
+			} 
+		} 
 		else {
 			if (v->queryAdd <= addr)
 				return 0;
@@ -815,7 +779,7 @@ read_tnode(unsigned int timeBegin, _vnodeInfo vi, vnode * v, long long addr, uns
 				size = v->queryAdd - addr;
 				end = v->queryAdd - addr;
 			}
-		}		//end else ???
+		} 
 		if (_read(vi->fd, (char *)vi->t, size, addr) < 0) {
 			ErrorFlag = READ_LVM_ERR;
 			return -1;
@@ -830,9 +794,9 @@ read_tnode(unsigned int timeBegin, _vnodeInfo vi, vnode * v, long long addr, uns
 						*beginTime_addr = addr + j * Tnode_SIZE;
 					break;
 				}
-			}	//end for(j = 0; j <size/Tnode_SIZE; j++)???
+			} 
 		}
-		if (size < end) {	//v->isRecycle==ISRecycledæˆç«‹
+		if (size < end) {	//v->isRecycle==ISRecycled³ÉÁ¢
 			if (_read(vi->fd, (char *)vi->t + size, end - size, addr1) < 0) {
 				ErrorFlag = READ_LVM_ERR;
 				return -1;
@@ -849,17 +813,17 @@ read_tnode(unsigned int timeBegin, _vnodeInfo vi, vnode * v, long long addr, uns
 				}	//end for
 			}
 
-		}		//end if(size<end)???
+		} 
 		addr1 = addr1 + end - size;
 		j = end / Tnode_SIZE;
 		if (j < TimeBuffSize)
-			vi->t[j].time = 0;	//è¡¨ç¤ºè¯¥tnodeæ— ç”¨
+			vi->t[j].time = 0;	//±íÊ¾¸ÃtnodeÎŞÓÃ
 		if (mode && !flag && (v->count == 2 || v->count == 1 && addr1 < v->queryAdd)
 		    && vi->t[TimeBuffSize - 1].time < timeBegin)
 			addr = addr1;
 		else
 			break;
-	}			//end while(1)????
+	} 
 	if (next_addr)
 		*next_addr = addr1;
 	if ((mode && flag) || !mode)
@@ -870,7 +834,7 @@ read_tnode(unsigned int timeBegin, _vnodeInfo vi, vnode * v, long long addr, uns
 
 long long
 getAddrByTime(int timeBegin, _vnodeInfo vi, vnode * v, unsigned long long *beginTime_addr)
-{				//dev modeæ˜¯é¡ºåºå’Œå€’åºã€‚
+{				//dev modeÊÇË³ĞòºÍµ¹Ğò¡£
 	//tnode* ptn = (tnode *)vn->FirstIndexTable; // record firstindex address;
 	int i = 0;
 	int startpos = 0;
@@ -882,7 +846,7 @@ getAddrByTime(int timeBegin, _vnodeInfo vi, vnode * v, unsigned long long *begin
 	if (_read(vi->fd, (char *)vi->t, _TimeBuffSize(v) * sizeof(tnode), v->firstIndex - FISTTIMESIZE * Tnode_SIZE) < 0) {
 		ErrorFlag = READ_LVM_ERR;
 		goto err;
-	}			//end if(_read(vi->fd,(char *)vi->t,Ti???
+	} 
 	size = ((i + startpos) % _FISTTIMESIZE(v)) * Tnode_SIZE * _TLEN(v);
 	addr = v->firstIndex + size;
 	addr1 = 0;
@@ -897,10 +861,10 @@ getAddrByTime(int timeBegin, _vnodeInfo vi, vnode * v, unsigned long long *begin
 				goto err;
 
 			break;
-		}		//end if(timeBegin < vi->t[(i+1+startpos) % FISTTIMESIZE].time){???
+		} 
 		if (++i >= _FISTTIMESIZE(v))
 			break;
-	}			//end while???
+	} 
 	if (i >= _FISTTIMESIZE(v))
 		goto err;
 	return addr1;
@@ -951,33 +915,33 @@ rev_ReadStream(vnode * v, _vnodeInfo vi, char *buf, int size)
 					if (read_tnode(0, vi, v, addr1, NULL, NULL, 0) <= 0)
 						goto err;
 					vi->count = (vi->nextTimeAddr - v->firstIndex) / Tnode_SIZE;
-				}	//end if(v->isRecycle!=ISRecycled)???
+				} 
 				else {
 					addr1 += _Maxtime(v) * Tnode_SIZE - TimeBuffSize * Tnode_SIZE;
 					if (read_tnode(0, vi, v, addr1, NULL, NULL, 0) <= 0)
 						goto err;
 				}
-			}	//end else??      
+			}       
 			vi->nextTimeAddr = addr1;
 			if (flag)
 				vi->count--;
 			else
 				vi->count = TimeBuffSize - 1;
-		}		//end if(vi->count<0)???
+		}	 
 		while (1) {
 			if (vi->count >= 0) {
-				if (vi->t[vi->count].time < vi->endTime || vi->t[vi->count].time > vi->beginTime) {	//å¦‚æœåˆ°ç»“æŸæ—¶é—´äº†ï¼Œå°±è¯»å–
+				if (vi->t[vi->count].time < vi->endTime || vi->t[vi->count].time > vi->beginTime) {	//Èç¹ûµ½½áÊøÊ±¼äÁË£¬¾Í¶ÁÈ¡
 					if (addr != 0 && _size) {
 						if (_read(vi->fd, buf, _size, addr) < 0) {
 							ErrorFlag = READ_LVM_ERR;
 						}
-					}	//end  if(addr!=0 && _size)???
+					} 
 					size1 += _size;
 					_size = 0;
 					flag1 = 1;
 					break;
-				}	//end if(vi->t[vi->count].time<vi->endTime????
-				else if (vi->t[vi->count].len == 0) {	//å¦‚æœæˆç«‹ï¼Œè¡¨æ˜è¿™æ®µæ•°æ®å·²ç»åˆ é™¤
+				} 
+				else if (vi->t[vi->count].len == 0) {	//Èç¹û³ÉÁ¢£¬±íÃ÷Õâ¶ÎÊı¾İÒÑ¾­É¾³ı
 					if (addr != 0 && _size) {
 						if (_read(vi->fd, buf, _size, addr) < 0) {
 							ErrorFlag = READ_LVM_ERR;
@@ -988,13 +952,13 @@ rev_ReadStream(vnode * v, _vnodeInfo vi, char *buf, int size)
 					vi->count--;
 					_size = 0;
 					addr = 0;
-				}	//end else if(vi->t[vi->count].len==0)???
+				} 
 				else {
-					if (addr == 0) {	//ï¼Œæ–°çš„å¼€å§‹ï¼Œå‰é¢çš„æ•°æ®å·²ç»è¯»å–äº†
+					if (addr == 0) {	//£¬ĞÂµÄ¿ªÊ¼£¬Ç°ÃæµÄÊı¾İÒÑ¾­¶ÁÈ¡ÁË
 						addr = vi->t[vi->count].addr;
 						_size = vi->t[vi->count].len;
-					}	//end if(addr==0)???
-					else if ((addr - vi->t[vi->count].len) != vi->t[vi->count].addr) {	//æ•°æ®å­˜å‚¨ä¸è¿ç»­
+					} 
+					else if ((addr - vi->t[vi->count].len) != vi->t[vi->count].addr) {	//Êı¾İ´æ´¢²»Á¬Ğø
 						if (_size && (_read(vi->fd, buf, _size, addr) < 0)) {
 							ErrorFlag = READ_LVM_ERR;
 						}
@@ -1003,27 +967,27 @@ rev_ReadStream(vnode * v, _vnodeInfo vi, char *buf, int size)
 						_size = vi->t[vi->count].len;
 						addr = vi->t[vi->count].addr;
 					}	//end else if
-					else {	//æ•°æ®å­˜å‚¨è¿ç»­
+					else {	//Êı¾İ´æ´¢Á¬Ğø
 						_size += vi->t[vi->count].len;
 						addr -= vi->t[vi->count].len;
 					}	//end else
-					if ((size1 + _size) >= size) {	//buf ç¼“å†²åŒºå·²æ»¡
+					if ((size1 + _size) >= size) {	//buf »º³åÇøÒÑÂú
 						if ((size1 + _size) == size)
 							vi->count--;
 						while ((size1 + _size) > size) {
 							_size -= vi->t[vi->count].len;
 							addr += vi->t[vi->count].len;
-						}	//end while???
+						} 
 						if (_read(vi->fd, buf, _size, addr) < 0) {
 							ErrorFlag = READ_LVM_ERR;;
 						}
 						size1 += _size;
 						flag1 = 1;
 						break;
-					}	//end if((_size1+_size)>=size){ ???
+					} 
 					vi->count--;
-				}	//end else?
-			}	//end if(vi->count>=0)???
+				} 
+			} 
 			else {
 				if (_size && addr) {
 					if (_read(vi->fd, buf, _size, addr) < 0) {
@@ -1033,13 +997,13 @@ rev_ReadStream(vnode * v, _vnodeInfo vi, char *buf, int size)
 					buf += _size;
 					_size = 0;
 					addr = 0;
-				}	//end if(_size && addr)???
+				} 
 				break;
-			}	//end else????
-		}		//end inner while(1)??
+			} 
+		}	 
 		if (flag1)
 			break;
-	}			//end outer while(1);
+	}		 
 	return size1;
       err:
 	return -1;
@@ -1047,14 +1011,14 @@ rev_ReadStream(vnode * v, _vnodeInfo vi, char *buf, int size)
 
 int
 _ReadStream(vnode * v, _vnodeInfo vi, char *buf, int size)
-{				//é¡ºåºè¯»
+{				//Ë³Ğò¶Á
 	uint32_t _size = 0, size1 = 0;
 //uint32_t   size3;
 	uint64_t addr = 0, addr1;
 	uint32_t end = TimeBuffSize;
 	while (1) {
 		if (vi->count >= 0 && vi->count < end) {
-			if (vi->t[vi->count].time == 0 || vi->t[vi->count].time > vi->endTime || vi->t[vi->count].time < vi->beginTime) {	//å¦‚æœåˆ°ç»“æŸæ—¶é—´äº†ï¼Œå°±è¯»å–
+			if (vi->t[vi->count].time == 0 || vi->t[vi->count].time > vi->endTime || vi->t[vi->count].time < vi->beginTime) {	//Èç¹ûµ½½áÊøÊ±¼äÁË£¬¾Í¶ÁÈ¡
 				//if(vi->t[vi->count].time==vi->endTime)
 				//         end=1;//for test
 				if (addr != 0 && _size) {
@@ -1067,7 +1031,7 @@ _ReadStream(vnode * v, _vnodeInfo vi, char *buf, int size)
 				addr = 0;
 				break;
 			}	//end if(vi->t[count-1].time>vi->endTime)
-			else if (vi->t[vi->count].len == 0) {	//å¦‚æœæˆç«‹ï¼Œè¡¨æ˜è¿™æ®µæ•°æ®å·²ç»åˆ é™¤
+			else if (vi->t[vi->count].len == 0) {	//Èç¹û³ÉÁ¢£¬±íÃ÷Õâ¶ÎÊı¾İÒÑ¾­É¾³ı
 				if (addr != 0 && _size) {
 					if (_read(vi->fd, buf, _size, addr - _size) < 0) {
 						ErrorFlag = READ_LVM_ERR;
@@ -1080,10 +1044,10 @@ _ReadStream(vnode * v, _vnodeInfo vi, char *buf, int size)
 				addr = 0;
 				_size = 0;
 			} else {
-				if (addr == 0) {	//ï¼Œæ–°çš„å¼€å§‹ï¼Œå‰é¢çš„æ•°æ®å·²ç»è¯»å–äº†
+				if (addr == 0) {	//£¬ĞÂµÄ¿ªÊ¼£¬Ç°ÃæµÄÊı¾İÒÑ¾­¶ÁÈ¡ÁË
 					addr = vi->t[vi->count].addr + vi->t[vi->count].len;
 					_size = vi->t[vi->count].len;
-				} else if (addr != vi->t[vi->count].addr) {	//æ•°æ®å­˜å‚¨ä¸è¿ç»­
+				} else if (addr != vi->t[vi->count].addr) {	//Êı¾İ´æ´¢²»Á¬Ğø
 					if (_read(vi->fd, buf, _size, addr - _size) < 0) {
 						ErrorFlag = READ_LVM_ERR;
 					}
@@ -1092,11 +1056,11 @@ _ReadStream(vnode * v, _vnodeInfo vi, char *buf, int size)
 					_size = vi->t[vi->count].len;
 					addr = vi->t[vi->count].addr + vi->t[vi->count].len;
 				}	//end else if
-				else {	//æ•°æ®å­˜å‚¨è¿ç»­
+				else {	//Êı¾İ´æ´¢Á¬Ğø
 					_size += vi->t[vi->count].len;
 					addr += vi->t[vi->count].len;
 				}	//end else
-				if ((size1 + _size) >= size) {	//buf ç¼“å†²åŒºå·²æ»¡
+				if ((size1 + _size) >= size) {	//buf »º³åÇøÒÑÂú
 					if ((size1 + _size) == size)
 						vi->count++;
 					if ((size1 + _size) > size) {
@@ -1109,9 +1073,9 @@ _ReadStream(vnode * v, _vnodeInfo vi, char *buf, int size)
 					size1 += _size;
 
 					break;
-				}	//end if(size==0 || _size>size) ?
+				} 
 				vi->count++;
-			}	//end else?
+			} 
 		}		//(vi->count>=0 && vi->count <=size3)
 		else {
 			if ((end = read_tnode(0, vi, v, vi->nextTimeAddr, NULL, &addr1, 0)) <= 0) {
@@ -1125,17 +1089,17 @@ _ReadStream(vnode * v, _vnodeInfo vi, char *buf, int size)
 					_size = 0;
 				}
 				break;
-			}	//end if(end=read_tnode ??? 
+			} 
 			vi->nextTimeAddr = addr1;
-		}		//end else??
-	}			//end while(1)???
+		} 
+	} 
 	return size1;
 }
 
 int
 ReadStream(uint32_t handle, char *buf, int size, char mode)
 {
-//bufç¼“å­˜æœ€å¤§ä¸º4Gï¼Œmodeï¼ï¼0ï¼Œè¡¨ç¤ºé¡ºåºï¼›modeï¼ï¼1ï¼Œè¡¨ç¤ºé€†åºã€‚
+//buf»º´æ×î´óÎª4G£¬mode£½£½0£¬±íÊ¾Ë³Ğò£»mode£½£½1£¬±íÊ¾ÄæĞò¡£
 	_vnodeInfo vi;
 	vnode *v;
 	if ((vi = getVnodeInfo(handle)) == NULL) {
@@ -1155,7 +1119,7 @@ ReadStream(uint32_t handle, char *buf, int size, char mode)
 
 int
 openRecordSeg(const char *cameraid, int beginTime, int endTime, int mode)
-{				//mode==0 é¡ºåºè¯»å–ï¼›modeï¼ï¼1 é€†åºè¯»å–ï¼›
+{				//mode==0 Ë³Ğò¶ÁÈ¡£»mode£½£½1 ÄæĞò¶ÁÈ¡£»
 	int handle;
 	_sbinfo sbinfo;
 	vnode *v;
@@ -1184,7 +1148,7 @@ openRecordSeg(const char *cameraid, int beginTime, int endTime, int mode)
 				free_vi(sbinfo, nr);
 			return -1;
 		}
-	}			//end if(mode==0)???
+	} 
 	else {
 		if (beginTime < endTime) {
 			vi->beginTime = endTime;
@@ -1197,7 +1161,7 @@ openRecordSeg(const char *cameraid, int beginTime, int endTime, int mode)
 			return -1;
 		}
 		vi->count = -1;
-	}			//end else????
+	} 
 	// printf("%u---fd:%d:%d\n",(unsigned int)pthread_self(),vi->fd,vi->key);
 	v->status++;
 	handle = (handle & 0xFFFFFF00) | (vi->key & 0x000000FF);
@@ -1265,7 +1229,7 @@ DeleteRecordSeg(uint32_t startTime, uint32_t endTime, const char *cameraid)
 
 int
 CloseRecordSeg(uint32_t handle, StreamInfo * si)
-{				//mode==0,å…³é—­è¯»ï¼›mode==1,å…³é—­å†™ã€‚
+{				//mode==0,¹Ø±Õ¶Á£»mode==1,¹Ø±ÕĞ´¡£
 	_sbinfo sbinfo;
 	vnode *v;
 	_vnodeInfo vi;
@@ -1281,9 +1245,9 @@ CloseRecordSeg(uint32_t handle, StreamInfo * si)
 		ErrorFlag = ERR_HANDLE;
 		return -1;
 	}
-	if (vi->status == 1 && si) {	//å†™
+	if (vi->status == 1 && si) {	//Ğ´
 		if (si->count > 0)
-			endTime = si->t[si->count - 1].time;	//
+			endTime = si->t[si->count - 1].time;
 		else
 			endTime = si->t[WriteLen - 1].time;
 		if (si->count != 0 && write_back_tnodes(sbinfo, v, vi, si) < 0)
@@ -1299,7 +1263,7 @@ CloseRecordSeg(uint32_t handle, StreamInfo * si)
 			v->curSnode += SEG_SIZE;
 			return -1;
 		}
-	}			//end if(mode==1)???
+	}
 	close(vi->fd);
 	pthread_mutex_destroy(&vi->mutex);
 	v->status--;
@@ -1315,9 +1279,9 @@ CloseRecordSeg(uint32_t handle, StreamInfo * si)
 }
 
      /*
-        è·å–å½•åƒæ®µå¤´
-        handleæ˜¯å¥æŸ„
-        è¦æ±‚bufçš„å®¹é‡å¤§äºç­‰äº10K
+        »ñÈ¡Â¼Ïñ¶ÎÍ·
+        handleÊÇ¾ä±ú
+        ÒªÇóbufµÄÈİÁ¿´óÓÚµÈÓÚ10K
       */
 uint32_t
 _GetRecordSegHead(const char *cameraid, uint32_t * pStartTime, uint32_t * pEndTime, char *buf, int *size)
@@ -1330,7 +1294,7 @@ _GetRecordSegHead(const char *cameraid, uint32_t * pStartTime, uint32_t * pEndTi
 	uint32_t return_time = ERR_RETURN;
 	_sbinfo sbinfo;
 	segindex si, si1;
-	//åˆ†æhandle
+	//·ÖÎöhandle
 	int handle;
 	/* char vol_path[VolNameLength];
 	   if(read_vol_by_camera(vol_path,cameraid)<0) return -1;
@@ -1350,7 +1314,7 @@ _GetRecordSegHead(const char *cameraid, uint32_t * pStartTime, uint32_t * pEndTi
 		return -1;
 	ID = _ID(handle);
 	//if((vi=getVnodeInfo(handle))==NULL) goto err;
-	//é€šè¿‡snodeæ‰¾åˆ°å¯¹åº”çš„å½•åƒæ®µï¼Œå…¶ä¸­nè¿”å›å¯¹åº”çš„ä½ç½®ç¼–å·
+	//Í¨¹ısnodeÕÒµ½¶ÔÓ¦µÄÂ¼Ïñ¶Î£¬ÆäÖĞn·µ»Ø¶ÔÓ¦µÄÎ»ÖÃ±àºÅ
 	pthread_mutex_lock(&sbinfo->mutex);
 	if ((fd = open(sbinfo->volName, O_RDONLY)) < 0) {
 		pthread_mutex_unlock(&sbinfo->mutex);
@@ -1365,7 +1329,7 @@ _GetRecordSegHead(const char *cameraid, uint32_t * pStartTime, uint32_t * pEndTi
 	if (return_time == ERR_RETURN)
 		goto err1;
 	addr = v->firstIndex - 1024 * SEGINFO_SIZE - FISTTIMESIZE * Tnode_SIZE + n * SEGINFO_SIZE;
-	//é€šè¿‡å½•åƒæ®µå¤´æ‰¾åˆ°å½•åƒæ®µçš„é•¿åº¦ã€‚
+	//Í¨¹ıÂ¼Ïñ¶ÎÍ·ÕÒµ½Â¼Ïñ¶ÎµÄ³¤¶È¡£
 	if (_read(fd, (char *)&len, sizeof(uint32_t), addr) < 0) {
 		ErrorFlag = READ_LVM_ERR;
 		goto err1;
@@ -1445,16 +1409,16 @@ DeleteRecordPara(const char *cameraid, uint32_t beginTime, uint32_t endTime)
 					ErrorFlag = WRITE_LVM_ERR;
 					goto err1;
 				}
-			}	//end if((addr1+size)>=???
+			}
 			else {
 				if (_write(vi->fd, (char *)vi->t, size, addr1) < 0) {
 					ErrorFlag = WRITE_LVM_ERR;
 					goto err1;
 				}
-			}	//end else??           
+			}          
 			addr1 = addr3;
-		}		//end while(1)???
-	}			//end if if((addr1>=v->firstIndex &&???
+		}
+	} 
 	close(vi->fd);
 	free_vi(sbinfo, (((char *)vi) - (char *)sbinfo->_bf) / sizeof(struct vnodeInfo));
 	return 0;
@@ -1498,7 +1462,7 @@ GetRecordInfo(const char *cameraid, uint32_t * pStartTime, uint32_t * pEndTime, 
 	uint32_t return_time = ERR_RETURN;
 	_sbinfo sbinfo;
 	segindex sIndex;
-	//åˆ†æhandle
+	//·ÖÎöhandle
 	int handle;
 	char buf[16 * 1024];
     uint32_t origin_time;
@@ -1540,7 +1504,7 @@ GetRecordInfo(const char *cameraid, uint32_t * pStartTime, uint32_t * pEndTime, 
         goto err1; 
     
 	addr = v->firstIndex - 1024 * SEGINFO_SIZE - FISTTIMESIZE * Tnode_SIZE + n * SEGINFO_SIZE;
-	//é€šè¿‡å½•åƒæ®µå¤´æ‰¾åˆ°å½•åƒæ®µçš„é•¿åº¦ã€‚
+	//Í¨¹ıÂ¼Ïñ¶ÎÍ·ÕÒµ½Â¼Ïñ¶ÎµÄ³¤¶È¡£
 	if (_read(fd, buf, DSI_SIZE, addr) < 0) {
 		ErrorFlag = READ_LVM_ERR;
 		goto err1;
@@ -1548,11 +1512,10 @@ GetRecordInfo(const char *cameraid, uint32_t * pStartTime, uint32_t * pEndTime, 
 	buf_to_DSI(buf, si);
 	close(fd);
 	return return_time;
-      err1:
-	  	printf("....get record info failed, err = %d......\n", ErrorFlag);
-	close(fd);
-      err:
-	  	printf("....get record info failed, err = %d......\n", ErrorFlag);
+  err1: 
+    close(fd);
+  err:
+  	printf("....get record info failed, err = %d......\n", ErrorFlag);
 	return ERR_RETURN;
 }
 
@@ -1564,8 +1527,7 @@ GetRecordInfoOnebyOne(const char *cameraid, uint32_t * pStartTime, uint32_t * pE
 	// _vnodeInfo vi; 
 	uint64_t addr;
 	_sbinfo sbinfo;
-	segindex *sIndex;
-	//·ÖÎöhandle
+	segindex *sIndex; 
 	int handle;
 	char buf[16 * 1024];
     uint32_t origin_time;
@@ -1581,9 +1543,9 @@ GetRecordInfoOnebyOne(const char *cameraid, uint32_t * pStartTime, uint32_t * pE
 	}
 	pthread_mutex_unlock(&sbinfo->mutex);
 	v = (vnode *) (sbinfo->vnodeTable + ID * sizeof(vnode));
-    addr = v->block[0][0] * (sbinfo->_es->blockSize) + DataAddr;	//ÕÒµ½snodeµÄÆğÊ¼µØÖ·
+    addr = v->block[0][0] * (sbinfo->_es->blockSize) + DataAddr;
 	if (v->SnodeRecycle == ISRecycled) {
-		len = 1024;	//Èç¹ûsnodeµÄ¿Õ¼äÒÑ¾­¸²¸Ç
+		len = 1024;
 		m = (*n + (v->curSnode - addr) / SEG_SIZE)%1024;
 	} else {
 		len = (v->curSnode - addr) / SEG_SIZE;
@@ -1593,12 +1555,12 @@ GetRecordInfoOnebyOne(const char *cameraid, uint32_t * pStartTime, uint32_t * pE
         close(fd);
         return 2;
     }
-	if (_read(fd, buf, len*SEG_SIZE, addr) < 0) {	//snodesÈ«²¿¶Áµ½buf
+	if (_read(fd, buf, len*SEG_SIZE, addr) < 0) {
 		ErrorFlag = READ_LVM_ERR;
         close(fd);
 		return ERR_RETURN;
 	}
-    sIndex = (segindex *) (buf + m * SEG_SIZE); //
+    sIndex = (segindex *) (buf + m * SEG_SIZE);
     if(sIndex->start_time == 0){
         close(fd);
         return 1;
@@ -1719,8 +1681,8 @@ GetRecordSegSize(const char *cameraid, uint32_t StartTime, uint32_t EndTime)
 				addr3 = v->block[k][0] * (sbinfo->_es->blockSize) + DataAddr + DataAddr1;
 			else
 				addr3 = v->block[k][0] * (sbinfo->_es->blockSize) + DataAddr;
-		}		//end for?
-	}			//end else?
+		}
+	}
 	close(vi->fd);
 	free_vi(sbinfo, (((char *)vi) - (char *)sbinfo->_bf) / sizeof(struct vnodeInfo));
 	return size / (1024);
@@ -1733,7 +1695,7 @@ GetRecordSegSize(const char *cameraid, uint32_t StartTime, uint32_t EndTime)
 }
 inline int
 is_allow_alloc(_sbinfo sbinfo, short blocks)
-{				//æ¬²åˆ†é…blocksçš„å—ï¼Œæ˜¯å¦æœ‰è¶³å¤Ÿçš„ç©ºé—²å—ã€‚
+{				//Óû·ÖÅäblocksµÄ¿é£¬ÊÇ·ñÓĞ×ã¹»µÄ¿ÕÏĞ¿é¡£
 	return ((sbinfo->_es->vnodeCount < (MaxUsers - 1))
 		&& (sbinfo->_es->freeBlocksCount >= blocks));
 }
@@ -1741,19 +1703,18 @@ is_allow_alloc(_sbinfo sbinfo, short blocks)
 
 inline unsigned long long
 minLvmSize()
-{				//é€»è¾‘å—çš„æœ€å°å¤§å°
+{				//Âß¼­¿éµÄ×îĞ¡´óĞ¡
 	return DataAddr;
 }
 
 
 int
 alloc_blocks_for_vnode(_sbinfo sbinfo, unsigned long long blocks, vnode * v)
-{				//blocksä¸ºéœ€è¦åˆ†é…çš„å—æ•°ï¼Œä¸ºvnodeåˆ†é…æ•°æ®å—
+{				//blocksÎªĞèÒª·ÖÅäµÄ¿éÊı£¬Îªvnode·ÖÅäÊı¾İ¿é
 	if (!is_allow_alloc(sbinfo, blocks)) {
         ErrorFlag = SPACE_NOT_ENOUGH;
 		goto err;
-	}			//end if(!is_allow_alloc(sbinfo,blocks))
-	//
+	}
 	if (cal_alloc_chunk(sbinfo, v, blocks) < 0)
 		goto err;
 	set_clr_bitmap(sbinfo, v, 1);
@@ -1809,7 +1770,7 @@ alloc_ID(const char *vol_path, const char *cameraid, _sbinfo * sbinf, int *ID)
 		ErrorFlag = EXIST_SAME_NAME;
 		return -1;
 	}
-	if (!spin_rdlock(sbTable.spin)) {	//?????
+	if (!spin_rdlock(sbTable.spin)) {
 		for (handle = 0; handle < LvmCount; handle++) {
 			sbinfo = sbTable.table[handle];
 			if (sbinfo && (strcmp(sbinfo->volName, vol_path) == 0))
@@ -1828,8 +1789,8 @@ alloc_ID(const char *vol_path, const char *cameraid, _sbinfo * sbinf, int *ID)
 			if (strcmp(((vnode *) ((char *)sbinfo->vnodeTable + m * sizeof(vnode)))->cameraid, cameraid) == 0) {
 				flag = 1;
 				break;
-			}	//end if(strcmp(????
-		}		//end if(bit???
+			}
+		}
 		else {
 			flag = 0;
 			(*ID) = m;
@@ -1837,7 +1798,7 @@ alloc_ID(const char *vol_path, const char *cameraid, _sbinfo * sbinf, int *ID)
 		}
 		m = (m + 1) % MaxUsers;
 		count++;
-	}			//end while????
+	}
 	*sbinf = sbinfo;
 	return flag;
 }
@@ -1910,7 +1871,7 @@ CreateRecordVol(char *volumeid, char *name, char *alias, short savedDays, char d
 		goto err;
 	}
 
-	v = (vnode *) (sbinfo->vnodeTable + sizeof(vnode) * ID);	//
+	v = (vnode *) (sbinfo->vnodeTable + sizeof(vnode) * ID);
 	if (alloc_blocks_for_vnode(sbinfo, blocks, v) < 0)
 		goto err;
 	if (fill_vnode(sbinfo, v, ID, volumeid, name, alias, savedDays, delPolicy, encodeType) < 0)
@@ -1935,7 +1896,7 @@ CreateRecordVol(char *volumeid, char *name, char *alias, short savedDays, char d
  
 int
 DeleteRecordVol(const char *cameraid, int mode)
-{				//mode==0 å¼ºåˆ¶åˆ é™¤ mode==1 è¦ç­‰è¯»å†™å®Œæˆä¹‹åæ‰åˆ é™¤
+{				//mode==0 Ç¿ÖÆÉ¾³ı mode==1 ÒªµÈ¶ÁĞ´Íê³ÉÖ®ºó²ÅÉ¾³ı
 	_sbinfo sbinfo;
 	vnode *v;
 	int ID, handle;
@@ -1992,7 +1953,7 @@ DeleteVideoVol(const char *vol_path)
         syslog(LOG_ERR,  "Init CameraInofs error!");
         return -1;
     }
-	if (!spin_rdlock(sbTable.spin)) {	//?????
+	if (!spin_rdlock(sbTable.spin)) {
 		for (handle = 0; handle < LvmCount; handle++) {
 			sbinfo = sbTable.table[handle];
 			if (sbinfo && (strcmp(sbinfo->volName, vol_path) == 0)) {
@@ -2006,7 +1967,7 @@ DeleteVideoVol(const char *vol_path)
 		return 0;
 	m = 0;
 	while (m < MaxUsers) {
-		if (bit(sbinfo->vnodemapping, m)) {	//æœ‰vnode
+		if (bit(sbinfo->vnodemapping, m)) {	//ÓĞvnode
 			v = (vnode *) (sbinfo->vnodeTable + m * sizeof(vnode));
 			if (v->status > 0) {
 				flag = 1;
@@ -2014,13 +1975,13 @@ DeleteVideoVol(const char *vol_path)
 			}
 		}
 		m++;
-	}			//end while(i<MaxUsers)?
+	}
 	if (flag == 1)
 		return -2;
 	if (removeCameraInfoByVol(vol_path) < 0) {
 		return -1;
 	}
-	if (!spin_wrlock(sbTable.spin)) {	//?????
+	if (!spin_wrlock(sbTable.spin)) {
 		for (handle = 0; handle < LvmCount; handle++) {
 			sbinfo = sbTable.table[handle];
 			if (sbinfo && (strcmp(sbinfo->volName, vol_path) == 0)) {
@@ -2032,7 +1993,7 @@ DeleteVideoVol(const char *vol_path)
 	}
 	m = 0;
 	while (m < MaxUsers) {
-		if (bit(sbinfo->vnodemapping, m)) {	//æœ‰vnode
+		if (bit(sbinfo->vnodemapping, m)) {	//ÓĞvnode
 			v = (vnode *) (sbinfo->vnodeTable + m * sizeof(vnode));
 			if (!spin_wrlock(v->spin)) {
 				for (vi = v->_bf; vi; vi = vi->next) {
@@ -2044,7 +2005,7 @@ DeleteVideoVol(const char *vol_path)
 			spin_rwdestroy(v->spin);
 		}
 		m++;
-	}			//end while(i<MaxUsers)?
+	}
 	spin_rwdestroy(sbinfo->_bh->spin);
 	free(sbinfo->bitmap);
 	free(sbinfo->vnodeTable);
