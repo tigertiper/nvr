@@ -10,6 +10,9 @@
 #endif
 
 #define _FILE_OFFSET_BITS 64
+//#define SPACE_TIME_SYNCHRONIZATION
+//#define PARALLELRECORD 
+//#define UPDATE
 
 #include<pthread.h>
 #include<string.h>
@@ -190,7 +193,12 @@ typedef struct _vnode {
     char SnodeRecycle;		////1 Recycled; 0 notRecycled 
     _vnodeInfo _bf;		//指向对应的缓冲区
     spinrwlock_t spin;
-    char status; 
+    char status;
+#ifdef SPACE_TIME_SYNCHRONIZATION
+    char SpaceState;
+    short origin_count;
+    uint32_t origin_time;
+#endif    
 } vnode;
 
 /*typedef struct _Voluminfo {

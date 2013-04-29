@@ -24,8 +24,6 @@
 
 #define NVRDVER "1.165"
 #define R_UNLIMITED	(~0UL)
-//#define PARALLELRECORD 
-//#define UPDATE
 
 char ClientIP[IPLEN];
 unsigned short int ClientPort;
@@ -296,9 +294,12 @@ main(int argc, char **argv)
     
     if(isRunning()>0)
         exit(1); 
-    
+#ifdef SPACE_TIME_SYNCHRONIZATION
+    syslog(LOG_INFO, "version %s-space_time_synchronization build:%s %s ", NVRDVER, __DATE__, __TIME__);
+#else
     syslog(LOG_INFO, "version %s build:%s %s", NVRDVER, __DATE__, __TIME__);
-    
+#endif
+
 	register SVCXPRT *transp;
 	pthread_t pid, pid1,pid2;
 	pthread_t pid3;

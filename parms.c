@@ -108,6 +108,14 @@ vnode_to_buf(char *buf, vnode * v)
 	memcpy(buf, &v->wr_count, sizeof(short));
 	buf += sizeof(short);
 	memcpy(buf, &v->status, sizeof(char));
+#ifdef SPACE_TIME_SYNCHRONIZATION
+    buf += sizeof(char);
+    memcpy(buf, &v->SpaceState, sizeof(char));
+    buf += sizeof(char);
+    memcpy(buf, &v->origin_count, sizeof(short));
+    buf += sizeof(short);
+    memcpy(buf, &v->origin_time, sizeof(int));
+#endif
 }
 
 void
@@ -149,6 +157,14 @@ buf_to_vnode(char *buf, vnode * v)
 	memcpy(&v->wr_count, buf, sizeof(short));
 	buf += sizeof(short);
 	memcpy(&v->status, buf, sizeof(char));
+#ifdef SPACE_TIME_SYNCHRONIZATION    
+    buf += sizeof(char);
+    memcpy(&v->SpaceState, buf, sizeof(char));
+    buf += sizeof(char);
+    memcpy(&v->origin_count, buf, sizeof(short));
+    buf += sizeof(short);
+    memcpy(&v->origin_time, buf, sizeof(int)); 
+#endif    
 	v->_bf = NULL;
 }
 

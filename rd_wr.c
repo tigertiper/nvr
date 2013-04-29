@@ -15,6 +15,8 @@ unsigned long long InitFlag = 0;
 #define _Maxtime(v)       (v->savedDays*24*60*60)
 #define _TimeBuffSize(v)  TimeBuffSize
 #define address_of_pointer(x) (long)((void*)x)
+#define _MinFirstEraseTnodeNum (10*60)
+
 
 
 CameraInfo* CameraInfos = NULL; 
@@ -454,10 +456,15 @@ CreatRecordSeg(char *cameraid, seginfo * sinfo, char *buf, short size)
 	return -1;
 }
 
+#ifdef SPACE_TIME_SYNCHRONIZATION
+int
+space_enough(_sbinfo sbinfo, vnode * v, int size, int *n, uint32_t startTime)
+#else
 int
 space_enough(_sbinfo sbinfo, vnode * v, int size, int *n)
+#endif
 {
-	int i;
+	int i,m;
 	uint64_t addr1, addr2;
 	for (i = 0; i < MaxchunkCount && v->block[i][0] != CHUNKNULL; i++) {
 		if (i == 0)
@@ -473,8 +480,27 @@ space_enough(_sbinfo sbinfo, vnode * v, int size, int *n)
 					i = 0;
 				(*n) = i;
 				if (i == 0) {
-					v->storeAddr = v->block[i][0] * (sbinfo->_es->blockSize) + DataAddr + DataAddr1;
-					v->isRecycle = ISRecycled;
+					v->storeAddr = v->block[i][0] * (sbinfo->_es->blockSize) + DataAddr + DataAddr1; 
+#ifdef SPACE_TIME_SYNCHRONIZATION
+                    if(v->SpaceState == 0) {
+                        if (v->isRecycle == NOTRecycled)  {
+                            for(m = 0; _TLEN(v)*m < _MinFirstEraseTnodeNum; m++); 
+                            if(v->wr_count < m+1) {
+                                v->SpaceState = 1;
+                            } else {
+                                v->SpaceState = 2; 
+                                v->origin_count = v->origin_count + m; 
+                            }   
+                        } else {
+                            v->SpaceState = 3;
+                        }
+                    }
+                    if(v->SpaceState == 1) {
+                        v->origin_time = startTime;
+                    }
+#else
+                    v->isRecycle = ISRecycled;
+#endif
 				} else
 					v->storeAddr = v->block[i][0] * (sbinfo->_es->blockSize) + DataAddr;
 				//size=size-(addr2-v->storeAddr);///////
@@ -544,6 +570,14 @@ write_back_tnodes(_sbinfo sbinfo, vnode * v, _vnodeInfo vi, StreamInfo * si)
 			// v->count=2;
 			v->wr_count = v->wr_count % _FISTTIMESIZE(v);
 		}
+#ifdef SPACE_TIME_SYNCHRONIZATION
+        if (v->SpaceState == 2) {
+            v->origin_count++;
+            if (v->origin_count == TimeBuffSize) {
+                v->origin_count = 0;
+            }
+        }
+#endif
 	} 
 	if ((v->queryAdd + count * Tnode_SIZE) >= (v->firstIndex + _Maxtime(v) * Tnode_SIZE)) {
 		size_ = (v->firstIndex + _Maxtime(v) * Tnode_SIZE - v->queryAdd);
@@ -583,7 +617,11 @@ writeTnodeToBuf(StreamInfo * si, uint32_t startTime, int size)
 		if (write_snode(si->sbinfo, si->v, si->vi, startTime, startTime + 1, 0) < 0)
 			goto err;
 	}
+#ifdef SPACE_TIME_SYNCHRONIZATION
+    if ((size = space_enough(si->sbinfo, si->v, size, &n, startTime)) == 0) {
+#else
 	if ((size = space_enough(si->sbinfo, si->v, size, &n)) == 0) {
+#endif 
         ErrorFlag = SPACE_NOT_ENOUGH;
         return -1;
     }
@@ -1429,8 +1467,37 @@ DeleteRecordPara(const char *cameraid, uint32_t beginTime, uint32_t endTime)
 	return -1;
 }
 
+#ifdef SPACE_TIME_SYNCHRONIZATION
+uint32_t
+findOriginTime(vnode * v, int fd)
+{ 
+    long long offset;
+    tnode originTnode;  
+    if( v->SpaceState == 0 ) {
+        if(v->count == 2){
+            offset = v->firstIndex - FISTTIMESIZE * Tnode_SIZE + v->wr_count* sizeof(tnode);
+        }
+        else{
+            offset = v->firstIndex - FISTTIMESIZE * Tnode_SIZE;
+        }              
+    }
+    else if (v->SpaceState == 1) {
+        return v->origin_time;
+    }
+    else if (v->SpaceState == 3) {
+        offset = v->firstIndex - FISTTIMESIZE * Tnode_SIZE + v->wr_count* sizeof(tnode);
+    }
+    else {
+        offset = v->firstIndex- FISTTIMESIZE * Tnode_SIZE + v->origin_count*sizeof(tnode);
+    }
 
-
+    if (_read(fd, (char*)&originTnode, sizeof(tnode), offset) < 0) {
+		ErrorFlag = READ_LVM_ERR;
+		return ERR_RETURN;
+	}  
+    return originTnode.time;
+}
+#else
 uint32_t
 findOriginTime(vnode * v, int fd)
 { 
@@ -1450,7 +1517,7 @@ findOriginTime(vnode * v, int fd)
     
     return originTnode.time;
 }
-
+#endif
 
 uint32_t
 GetRecordInfo(const char *cameraid, uint32_t * pStartTime, uint32_t * pEndTime, seginfo * si)
@@ -1644,11 +1711,19 @@ GetRecordSegSize(const char *cameraid, uint32_t StartTime, uint32_t EndTime)
 		if (addr4 >= addr1 && addr4 < addr2)
 			h = i;
 	}
-	if (j == -1 || h == -1 || (j > h && v->isRecycle != ISRecycled)) {
+#ifdef SPACE_TIME_SYNCHRONIZATION
+    if (j == -1 || h == -1 || (j > h && v->SpaceState == 0)) {
+#else
+    if (j == -1 || h == -1 || (j > h && v->isRecycle != ISRecycled)) {
+#endif
 		ErrorFlag = TIME_ERR;
 		goto err1;
 	}
+#ifdef SPACE_TIME_SYNCHRONIZATION
+    if (j > h && v->SpaceState != 0 || (j == h && v->SpaceState != 0  && addr3 >= addr4))
+#else
 	if (j > h && v->isRecycle == ISRecycled || (j == h && v->isRecycle == ISRecycled && addr3 >= addr4))
+#endif        
 		count = h + i - j;
 	else
 		count = h - j;
@@ -1742,6 +1817,10 @@ fill_vnode(_sbinfo sbinfo, vnode * v, int ID, char *volumeid, char *name, char *
 	v->count = 0;
 	v->wr_count = 0;
 	v->status = 0;
+#ifdef SPACE_TIME_SYNCHRONIZATION
+    v->SpaceState = 0;
+    v->origin_count = 0;
+#endif
 	/* 
 	   |1024*SEG_SIZE |1024*SEGINFO_SIZE |FISTTIMESIZE*Tnode_SIZE|Maxtime*Tnode_SIZE|
 	 */
