@@ -1932,10 +1932,6 @@ CreateRecordVol(char *volumeid, char *name, char *alias, short savedDays, char d
 	vnode *v;
 	_sbinfo sbinfo = NULL;
 	int flag;
-	if(initCameraInfos()<0){
-        syslog(LOG_ERR,  "Init CameraInofs error!");
-        return -1;
-    }
     if(!read_vol_by_camera(NULL, name))//if exist same camera in list, remove it
     {
         ErrorFlag = EXIST_SAME_NAME;
@@ -1979,13 +1975,7 @@ DeleteRecordVol(const char *cameraid, int mode)
 	_sbinfo sbinfo;
 	vnode *v;
 	int ID, handle;
-	_vnodeInfo vi;
-	//seginfo * seg;
-	syslog(LOG_INFO,  "Delete RecordVol...");
-    if(initCameraInfos()<0){
-        syslog(LOG_ERR,  "Init CameraInofs error!");
-        return -1;
-    }
+	_vnodeInfo vi; 
 	handle = get_dev_ID(cameraid, &sbinfo);
 	if (handle == -1)
 		return -1;

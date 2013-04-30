@@ -525,12 +525,14 @@ nvrproc_getrecsize(GETRECSIZEargs getRecSizeArgs)
 int
 nvrproc_creatrecvol(CREATRECVOLargs creatRecVolArgs)
 {
-	syslog(LOG_INFO,  "creating recordvol, IPC:%s, vediovol:%s...",creatRecVolArgs.name, creatRecVolArgs.volumeid);
+	syslog(LOG_INFO,  "creating recordvol, IPC:%s...",creatRecVolArgs.name);
 	int ret = 0, i;
 	uint64_t volSize = creatRecVolArgs.blockSize;
 	volSize *= creatRecVolArgs.blocks; 
-	get_lv_name(lv,MAX_LV_NUM);
-	//if(num<=0)return -1;
+	if(initCameraInfos()<0){
+        syslog(LOG_ERR,  "create recordvol fail:init camerainofs error!");
+        return -1;
+    } 
     if('\0' == *creatRecVolArgs.volumeid)
     {
         for (i = 0; i < MAX_LV_NUM; i++) {
@@ -556,7 +558,7 @@ nvrproc_creatrecvol(CREATRECVOLargs creatRecVolArgs)
         }
 
         lv[i].length = get_free_vol_size(lv[i].lv_name);
-        syslog(LOG_ERR,  "create recordvol sucess, IPC:%s, vediovol:%s.\n",creatRecVolArgs.name, creatRecVolArgs.volumeid);
+        syslog(LOG_ERR,  "create recordvol sucess, IPC:%s, vediovol:%s.\n",creatRecVolArgs.name, lv[i].lv_name);
     }
     else
     {
@@ -578,8 +580,11 @@ int
 nvrproc_delrecvol(DELRECVOLargs delRecVolArgs)
 {
 	syslog(LOG_INFO,  "deleting recordvol, IPC:%s...", delRecVolArgs.cameraID);
-
 	int ret = 0, i;
+    if(initCameraInfos()<0){
+        syslog(LOG_ERR,  "delete recordvol fail:init camerainofs error!");
+        return -1;
+    } 
 	ret = DeleteRecordVol(delRecVolArgs.cameraID, delRecVolArgs.mode);
 	if(ret < 0)
 	{
@@ -750,7 +755,9 @@ get_lv_name(LvInfo * lv_info, int max)
 	char *tmp;
 	int i;
     bzero(lv_info, max*sizeof(LvInfo));
+    setenv("LVM_SUPPRESS_FD_WARNINGS", "1", 1);
 	if ((fp = popen("lvs -o vg_name,lv_name --noheadings --separator /", "r")) != NULL) {
+        syslog(LOG_INFO,  "show vediovol list:");
 		while (fgets(line, MAXLINE, fp) != NULL) {
 			i = 0;
 			while (line[i] == ' ' || line[i] == '\t')
