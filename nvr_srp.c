@@ -185,7 +185,7 @@ nvrproc_write(WRITEargs writeargs)
 	i = findStreamInfo(writeargs.recordHandle);
 	if (i < 0 || writeargs.data.data_len <= 0) {
 		ErrorFlag = ERR_HANDLE;
-		syslog(LOG_ERR,   "error record handle:0x%x.\n", writeargs.recordHandle);
+		syslog(LOG_ERR,   "write error: error handle 0x%x.", writeargs.recordHandle);
 		return -1;
 	}
 
@@ -201,7 +201,7 @@ nvrproc_write(WRITEargs writeargs)
 	
 	syslog(LOG_DEBUG,   "...nvrproc_write, cameraID:%s, handle:0x%x, begintime:%u...", streamInfos[i]->cameraID, streamInfos[i]->handle, writeargs.beginTime);
 	if (writeTnodeToBuf(streamInfos[i], streamInfos[i]->writeTime, streamInfos[i]->writeDataLen) < 0) {
-		syslog(LOG_ERR,   "write tnode to buf fail, IPC:%s, errno:%u.\n", streamInfos[i]->cameraID, ErrorFlag);
+		syslog(LOG_ERR,   "write error: write tnode to buf fail, IPC:%s, errno:%u.", streamInfos[i]->cameraID, ErrorFlag);
 		return -1;
 	}
 	gettimeofday(&time1, NULL);
@@ -209,7 +209,7 @@ nvrproc_write(WRITEargs writeargs)
 
 	if (writeToBuf(streamInfos[i], streamInfos[i]->writeData, streamInfos[i]->writeDataLen) < 0) {
 		ErrorFlag = WRITE_LVM_ERR;
-		syslog(LOG_ERR,   "write data to buf fail, IPC:%s, errno:%u.\n", streamInfos[i]->cameraID, ErrorFlag);
+		syslog(LOG_ERR,   "write error: write data to buf fail, IPC:%s, errno:%u.", streamInfos[i]->cameraID, ErrorFlag);
 		return -1;
 	}
 	streamInfos[i]->v->storeAddr += streamInfos[i]->writeDataLen;
@@ -299,7 +299,7 @@ writeThread(void *arg)
 				//pthread_rwlock_wrlock(&si->RWlock_Recording);
 				si->isRecording = 0;
 				//pthread_rwlock_unlock(&si->RWlock_Recording);
-				syslog(LOG_ERR,  "write lvm error, IPC:%s, errno:%u\n", si->cameraID, ErrorFlag);
+				//syslog(LOG_ERR,  "write lvm error, IPC:%s, errno:%u\n", si->cameraID, ErrorFlag);
 			}
 			/*clear the buffer, and reset it */
 			//bzero(si->RecordBuffer[si->wrFlag], si->BUsed_Size[si->wrFlag]);
