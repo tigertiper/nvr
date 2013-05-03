@@ -15,8 +15,7 @@
 #include <unistd.h>
 #include <sys/resource.h>
 #include "syslog.h" 
-#include "init.h"
-#include "Debug.h"
+#include "init.h" 
 
 #ifndef SIG_PF
 #define SIG_PF void(*)(int)
@@ -307,11 +306,9 @@ main(int argc, char **argv)
 
     
     if(initCameraInfos()<0){
-        syslog(LOG_ERR, "init camera infos fail.");
+        syslog(LOG_ERR, "init camerainfos fail.");
         exit(1);
     }
-
-    showCameraList();
     
 	pmap_unset(NVRPROG, NVRVERS);
 

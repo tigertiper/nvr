@@ -1,14 +1,58 @@
-#include"info.h"
-int get_LVM_size(const char *volName);
-long long get_free_vol_size(const char *volName);
-int get_cameras_from_vol(char **cameras, int *num, const char *volName);
-int init(char *VolPath);
-extern int tcp_create();
-extern void *listen_request_thread(void *args);
-extern void *VolOpThread(void *);
-extern void *WriteTnodeThread(void *);
-extern void *SerialRecordThread(void* arg);
-extern void *ParallelRecordThread(void* arg);
-extern void *UpdateThread(void *arg);
-extern int initCameraInfos();
+#ifndef _INIT_H
+#define _INIT_H
+ 
+#include <rpc/rpc.h>
+#include <sys/msg.h>
+#include <sys/ipc.h>
+#include <sys/types.h>
+#include <errno.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <poll.h> 
+#include <netinet/in.h>
+#include <sys/ioctl.h>
+#include <time.h>
+#include <sys/time.h>
+#include "nvr.h" 
+#include "rd_wr.h"
+#include "multi_stream.h"
+#include "syslog.h" 
+#include"info.h" 
+#include "multi_stream.h"
+
+
+#define SERV_PORT 8000 
+#define REC_HEAD_SIZE 14 
+#define REC_RESULT_SIZE 10
+#define OPEN_MAX 256
+
+extern pthread_rwlock_t DInfo_PRW;
+extern pthread_rwlock_t SInfo_PRW;
+extern char ClientIP[IPLEN];
+extern unsigned short int ClientPort;
+extern int debug_level; 
+
+
+static int retcode;
+static READres readres; 
+static HEADERinfo headerInfo; 
+static char readBuf[MAX_READ_SIZE];
+static char headBuf[MAX_HEADER_LENGTH]; 
+
+
+void clearInactiveStreams();
+int tcp_create();
+int isRunning();
+void * UpdateThread(void *arg);
+void *VolOpThread(void *);
+void *WriteTnodeThread(void *);
+void *SerialRecordThread(void* arg);
+void *ParallelRecordThread(void* arg);
+void *UpdateThread(void *arg);
+
+#endif
 

@@ -58,6 +58,7 @@ typedef struct CameraInfo{
 extern CameraInfo*CameraInfos;
 extern unsigned long long get_lv_size(const char *volName);
 int is_vedio_LVM(const char *Volpath, SBlock * sb);
+int get_lv_name(LvInfo * lv_info, int max);
 int CreatRecordSeg(char *cameraid, seginfo * sinfo, char *buf, short size);
 int WriteStream(uint32_t handle, uint32_t startTime, char *buf,
 		unsigned int size);
@@ -83,20 +84,17 @@ int CreateRecordVol(char *volumeid, char *name,
 		    unsigned long long blocks);
 int DeleteRecordVol(const char *cameraid, int mode);	//0 表示强制使用，1,如果有使用，不删除
 int DeleteVideoVol(const char *volPath);
-
 int alloc_blocks_for_vnode(_sbinfo sbinfo, unsigned long long blocks, vnode * v);
-
-
+int get_cameras_from_vol(char cameras[][CNameLength], int *num,
+			 const char *volName);
+long long get_free_vol_size(const char *volName);
+_sbinfo init(const char *volume_path);
 int creatCameraList();
 void showCameraList();
 int addCameraInfo(const char * cameraID,  const char * volName);
 int read_vol_by_camera( char * vol_path, const char * cameraID);
 int removeCameraInfo(const char *cameraID);
 int removeCameraInfoByVol(const char *vol_path);
-
-
-
-
-
+int initCameraInfos();
 
 #endif

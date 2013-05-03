@@ -17,3 +17,5 @@
 /nohup.out
 /tags
 /cscope.in.out
+/*.sh
+/init.c

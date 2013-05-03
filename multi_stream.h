@@ -2,8 +2,7 @@
 #define _MULTI_STREAM_H
 
 #include <pthread.h>
-#include "info.h"
-extern const unsigned int StoreBufferSize;
+#include "info.h" 
 
 #define MAX_CAMERA 100
 #define MAX_LOGINS 1024
@@ -110,7 +109,6 @@ extern int findStreamInfo(unsigned int handle);	//called by record,stopRecord
 extern int findStreamInfoByCID(char* cameraID);
 extern int allocStreamInfo(unsigned int handle);	//called by startrecord
 extern void releaseStreamInfo(StreamInfo ** si);	//called by stoprecord
-void clearInactiveStreams();
 extern int initDownloadInfo(unsigned int dhandle);
 extern int findDownloadInfo(unsigned int dhandle);
 extern void releaseDownloadInfo(DownloadInfo ** di); 

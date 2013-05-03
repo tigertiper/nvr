@@ -6,9 +6,9 @@
 #include<fcntl.h>
 #include<sys/stat.h>
 #include"rd_wr.h"
-#include"multi_stream.h"
-#include"Debug.h"
+#include"multi_stream.h" 
 #include"syslog.h"
+
 unsigned long long InitFlag = 0;
 #define  _TLEN(v)         ((v->savedDays*24*60*60)/(TimeBuffSize))
 #define _FISTTIMESIZE(v)    TimeBuffSize
@@ -227,6 +227,40 @@ is_vedio_LVM(const char *Volpath, SBlock * sb)
 // free(sb);
 	close(fd1);
 	return 0;
+}
+
+long long
+get_free_vol_size(const char *volName)
+{
+	int fd1;
+	char buf[SB_SIZE];
+	long long size;
+	SBlock *sb;
+	if ((sb = (SBlock *) malloc(sizeof(SBlock))) < 0) {
+		ErrorFlag = MALLOC_ERR;
+		return -1;
+	}
+	if ((fd1 = open(volName, O_RDONLY)) < 0) {
+		ErrorFlag = OPEN_FILE_ERR;
+		goto err;
+	}
+	if (_read(fd1, buf, SB_SIZE, 0) < 0) {
+		ErrorFlag = READ_LVM_ERR;
+		goto err;
+	}
+	buf_to_sb(buf, sb);
+	close(fd1);
+	if (sb->magic != MAGIC || (strcmp(sb->fileSystemName, FILE_SYS_NAME) != 0)) {
+		free(sb);
+		return -1;
+	}
+	size = sb->freeBlocksCount * ((sb->blockSize / 1024) / 1024);
+	free(sb);
+	return size;
+      err:
+	free(sb);
+	close(fd1);
+	return -1;
 }
 
 
@@ -1961,7 +1995,6 @@ CreateRecordVol(char *volumeid, char *name, char *alias, short savedDays, char d
 		clrbit_(sbinfo->vnodemapping, ID);
 		goto err;
 	}
-    showCameraList();
 	return 0;
 
       err:
@@ -2003,8 +2036,7 @@ DeleteRecordVol(const char *cameraid, int mode)
 	if (put_vnode(sbinfo, v, sbinfo->vnodemapping, (((char *)v) - (char *)sbinfo->vnodeTable) / sizeof(vnode)) < 0)
 		goto err;
 	if (removeCameraInfo (cameraid) < 0)
-		goto err;
-    showCameraList();
+		goto err; 
 	return 0;
       err:
 	return -1;
@@ -2116,13 +2148,14 @@ void showCameraList()
 {
     if(CameraInfos)
     {
-         syslog(LOG_INFO,  "show camera list:");
+         syslog(LOG_INFO,  "camera list:");
          CameraInfo * p = CameraInfos;
          while(p->next != NULL)
          {
             syslog(LOG_INFO,  "%s",p->next->CameraID);
             p = p->next;
          }
+         syslog(LOG_INFO,  "camera list end.");
     }
 }
 
@@ -2220,6 +2253,105 @@ int removeCameraInfoByVol(const char *vol_path)
         pCameraInfo = pCameraInfo->next; 
     } 
     return 0;
+}
+
+int
+get_lv_name(LvInfo * lv_info, int max)
+{
+	int num = 0;
+	FILE *fp = NULL;
+	char line[MAXLINE];
+	char *tmp;
+	int i;
+    bzero(lv_info, max*sizeof(LvInfo));
+    setenv("LVM_SUPPRESS_FD_WARNINGS", "1", 1);
+	if ((fp = popen("lvs -o vg_name,lv_name --noheadings --separator /", "r")) != NULL) {
+        syslog(LOG_INFO,  "vediovol list:");
+		while (fgets(line, MAXLINE, fp) != NULL) {
+			i = 0;
+			while (line[i] == ' ' || line[i] == '\t')
+				i++;
+			//printf("%s",&line[i]);
+			tmp = &line[i];
+			while (line[i] != '\n')
+				i++;
+			line[i] = '\0';
+			strcpy(lv_info[num].lv_name, "/dev/");
+			strcat(lv_info[num].lv_name, tmp);
+			lv_info[num].length = get_free_vol_size(lv_info[num].lv_name); 
+			if (lv_info[num].length != -1)
+            {         
+                syslog(LOG_INFO, "vediovol_%d:%s, freesize:%ld",num,lv_info[num].lv_name,lv_info[num].length);
+                num++;
+            }
+            else
+            {
+                bzero(lv_info[num].lv_name, CNameLength);
+            }
+			if (num >= max)
+				break;
+		}
+		pclose(fp);
+        syslog(LOG_INFO,  "vediovol list end.");
+	}
+	return num;
+}
+
+int initCameraInfos()
+{
+     int i;
+     int count=0;
+     char *vbitmap;
+     int fd;
+     char buf[Vnode_SIZE];
+     vnode v;
+     const char *lv_name;
+     removeCameraList();
+     if(creatCameraList()<0)
+        return -1;
+     get_lv_name (lv, MAX_LV_NUM);  
+     for (i = 0; i < MAX_LV_NUM; i++) {
+            lv_name = (const char*)lv[i].lv_name;
+            if('\0' == *lv_name)
+            {
+                break;
+            } 
+            if((fd=open(lv_name, O_RDONLY))<0){
+                 ErrorFlag=OPEN_FILE_ERR;
+				 syslog(LOG_ERR, "opening vediovol %s error!",lv_name);
+                 return -1;
+            }
+            if((vbitmap=(char *)malloc(sizeof(char) *(MaxUsers / 8)))==NULL){
+                ErrorFlag=MALLOC_ERR;
+                close(fd);
+				syslog(LOG_ERR, "malloc error!");
+                return -1;
+            }
+            if(_read(fd, vbitmap, MaxUsers / 8, VBitmapAddr)<0){
+                 close(fd);
+                 free(vbitmap);
+				 syslog(LOG_ERR, "read vbitmap error!");
+                 return -1;
+            }
+            count=0;
+            while(count<MaxUsers) {
+                if(bit(vbitmap,count)){
+                      if(_read(fd,buf,Vnode_SIZE,VnodeAddr+count*Vnode_SIZE)<0){
+                          close(fd);
+                          free(vbitmap);
+				          syslog(LOG_ERR, "read vode error!");
+                          return -1;
+                       }
+                       buf_to_vnode(buf,&v);
+                       addCameraInfo(v.cameraid,lv_name);  
+                }
+            count++;
+            }
+            close(fd);
+            free(vbitmap);   
+     }
+     showCameraList();
+     return 0;
 }
 
 

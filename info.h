@@ -1,5 +1,5 @@
-#ifndef INIT_H
-#define INIT_H
+#ifndef _INFO_H
+#define _INFO_H
 
 #ifndef _LARGEFILE_SOURCE
 #define _LARGEFILE_SOURCE
