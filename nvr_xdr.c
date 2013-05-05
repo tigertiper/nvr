@@ -483,4 +483,15 @@ xdr_RECORDBYORDERres (XDR *xdrs, RECORDBYORDERres *objp)
 	return TRUE;
 }
 
+bool_t
+xdr_DELVEDVOLargs(XDR * xdrs, DELVEDVOLargs * objp)
+{
+	register int32_t *buf;
+
+	if (!xdr_string(xdrs, &objp->volname, ~0))
+		return FALSE;
+	if (!xdr_int(xdrs, &objp->mode))
+		return FALSE;    
+	return TRUE;
+}
 

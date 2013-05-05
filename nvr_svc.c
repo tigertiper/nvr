@@ -53,6 +53,7 @@ nvrprog_1(struct svc_req *rqstp, register SVCXPRT * transp)
 		CREATRECVOLargs nvrproc_creatrecvol_1_arg;
 		DELRECVOLargs nvrproc_delrecvol_1_arg;
 		RECORDBYORDERargs nvrproc_searchrecordbyorder_1_arg;
+        DELVEDVOLargs nvrproc_delvedvol_1_arg;
 	} argument;
 	char *result;
 	xdrproc_t _xdr_argument, _xdr_result;
@@ -182,6 +183,11 @@ nvrprog_1(struct svc_req *rqstp, register SVCXPRT * transp)
 			_xdr_result = (xdrproc_t) xdr_RECORDBYORDERres;
 			local = (char *(*)(char *, struct svc_req *)) nvrproc_searchrecordbyorder_1_svc;
 			break;
+        case NVRPROC_DELVEDVOL:
+			_xdr_argument = (xdrproc_t) xdr_DELVEDVOLargs;
+			_xdr_result = (xdrproc_t) xdr_int;
+			local = (char *(*)(char *, struct svc_req *))nvrproc_delvedvol_1_svc;
+			break;    
 		default:
 			svcerr_noproc(transp);
 			return;
@@ -291,8 +297,11 @@ main(int argc, char **argv)
 	//end 
 	setlogmask(LOG_UPTO(logmask));
     
-    if(isRunning()>0)
-        exit(1); 
+    if(already_running() > 0) {
+        syslog(LOG_INFO, "%s already running.", argv[0]);
+        exit(1);
+    }
+    
 #ifdef SPACE_TIME_SYNCHRONIZATION
     syslog(LOG_INFO, "version %s-space_time_synchronization build:%s %s ", NVRDVER, __DATE__, __TIME__);
 #else

@@ -29,6 +29,7 @@ unsigned int nvrproc_getrecsize(GETRECSIZEargs getRecSizeArgs);
 int nvrproc_creatrecvol(CREATRECVOLargs creatRecVolArgs);
 int nvrproc_delrecvol(DELRECVOLargs delRecVolArgs);
 RECORDBYORDERres nvrproc_searchrecordbyorder(RECORDBYORDERargs searchargs);
+int nvrproc_delvedvol(DELVEDVOLargs delVedVolArgs);
 
 
 unsigned int *
@@ -165,5 +166,13 @@ nvrproc_searchrecordbyorder_1_svc(RECORDBYORDERargs* recordByOrderargs , struct 
 	static RECORDBYORDERres retrecord;
 	retrecord = nvrproc_searchrecordbyorder(*(RECORDBYORDERargs*) recordByOrderargs);
 	return &retrecord;
+}
+
+int *
+nvrproc_delvedvol_1_svc(DELVEDVOLargs * delVedVolArgs, struct svc_req *rpstp)
+{
+	static int retcode;
+	retcode = nvrproc_delvedvol(*(DELVEDVOLargs *) delVedVolArgs);
+	return &retcode;
 }
 

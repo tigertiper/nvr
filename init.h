@@ -29,6 +29,8 @@
 #define REC_HEAD_SIZE 14 
 #define REC_RESULT_SIZE 10
 #define OPEN_MAX 256
+#define LOCKFILE "/var/run/nvrd.pid"
+#define LOCKMODE (S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)
 
 extern pthread_rwlock_t DInfo_PRW;
 extern pthread_rwlock_t SInfo_PRW;
@@ -46,6 +48,7 @@ static char headBuf[MAX_HEADER_LENGTH];
 
 void clearInactiveStreams();
 int tcp_create();
+int already_running(void);
 int isRunning();
 void * UpdateThread(void *arg);
 void *VolOpThread(void *);

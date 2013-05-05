@@ -548,3 +548,25 @@ nvrproc_delrecvol(DELRECVOLargs delRecVolArgs)
 	return ret;
 }
 
+int
+nvrproc_delvedvol(DELVEDVOLargs delVedVolArgs)
+{
+	syslog(LOG_INFO,  "deleting vediovol, volname:%s...", delVedVolArgs.volname);
+	int ret = 0; 
+    char cmd[256];
+	ret = DeleteVideoVol(delVedVolArgs.volname);
+	if(ret < 0)
+	{
+		syslog(LOG_ERR,  "delete vediovol fail, volname:%s, errno:%u.\n",delVedVolArgs.volname, ErrorFlag);
+		return ret;
+	}
+    if(delVedVolArgs.mode) 
+    {
+        sprintf(cmd, "lvremove -f %s >/dev/null 2>&1", delVedVolArgs.volname);
+        system(cmd);
+    }
+	syslog(LOG_INFO,  "delete vediovol success, volname:%s.\n",delVedVolArgs.volname);
+    
+	return ret;
+}
+

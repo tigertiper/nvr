@@ -163,6 +163,13 @@ char *cameraID;
 int mode;
 };
 typedef struct DELRECVOLargs DELRECVOLargs;
+
+struct DELVEDVOLargs {
+char *volname;
+int mode;
+};
+typedef struct DELVEDVOLargs DELVEDVOLargs;
+
    
 #define NVRPROG 0x30090949
 #define NVRVERS 1
@@ -226,6 +233,10 @@ typedef struct DELRECVOLargs DELRECVOLargs;
 #define NVRPROC_SEARCHRECORDBYORDER 17
 	extern RECORDBYORDERres* nvrproc_searchrecordbyorder_1(RECORDBYORDERargs*,   CLIENT *);
 	extern RECORDBYORDERres* nvrproc_searchrecordbyorder_1_svc(RECORDBYORDERargs*,   struct svc_req *);
+
+#define NVRPROC_DELVEDVOL 18         
+    extern int *nvrproc_delvedvol_1(DELVEDVOLargs *, CLIENT *);
+    extern int *nvrproc_delvedvol_1_svc(DELVEDVOLargs *, struct svc_req *);    
 	
     extern int nvrprog_1_freeresult(SVCXPRT *, xdrproc_t, caddr_t);
 
@@ -281,9 +292,12 @@ typedef struct DELRECVOLargs DELRECVOLargs;
 
 		
 #define NVRPROC_SEARCHRECORDBYORDER 17
-		extern RECORDBYORDERres* nvrproc_searchrecordbyorder_1();
-		extern RECORDBYORDERres* nvrproc_searchrecordbyorder_1_svc();
+	extern RECORDBYORDERres* nvrproc_searchrecordbyorder_1();
+	extern RECORDBYORDERres* nvrproc_searchrecordbyorder_1_svc();
 
+#define NVRPROC_DELVEDVOL 18         
+    extern int *nvrproc_delvedvol_1();
+    extern int *nvrproc_delvedvol_1_svc();
 
     extern int nvrprog_1_freeresult();
 #endif				/* K&R C */
@@ -308,6 +322,7 @@ typedef struct DELRECVOLargs DELRECVOLargs;
     extern bool_t xdr_DELRECVOLargs(XDR *, DELRECVOLargs *);
     extern	bool_t xdr_RECORDBYORDERargs (XDR *, RECORDBYORDERargs*);
     extern  bool_t xdr_RECORDBYORDERres (XDR *, RECORDBYORDERres*);
+    extern bool_t xdr_DELVEDVOLargs(XDR *, DELVEDVOLargs *);
 
 
 #else				/* K&R C */
@@ -328,6 +343,7 @@ typedef struct DELRECVOLargs DELRECVOLargs;
     extern bool_t xdr_DELRECVOLargs();
     extern bool_t xdr_RECORDBYORDERargs();
     extern boot_t xdr_RECORDBYORDERres();
+    extern bool_t xdr_DELVEDVOLargs();
 
 #endif				/* K&R C */
 

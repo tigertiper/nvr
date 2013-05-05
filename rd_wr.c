@@ -1990,15 +1990,13 @@ CreateRecordVol(char *volumeid, char *name, char *alias, short savedDays, char d
 		clrbit_(sbinfo->vnodemapping, ID);
 		goto err;
 	}
-	if (addCameraInfo(name, volumeid)< 0) {
-		printf("..........Add Camera failed!.........\n");
+	if (addCameraInfo(name, volumeid)< 0) { 
 		clrbit_(sbinfo->vnodemapping, ID);
 		goto err;
 	}
 	return 0;
 
-      err:
-	  	printf("....create record vol failed, err = %d......\n", ErrorFlag);
+      err: 
 	return -1;
 }
  
@@ -2044,16 +2042,12 @@ DeleteRecordVol(const char *cameraid, int mode)
  
 int
 DeleteVideoVol(const char *vol_path)
-{
+{ 
 	_sbinfo sbinfo;
 	vnode *v;
 	int m, handle, flag = 0;
 	_vnodeInfo vi;
-	//seginfo * seg;
-	if(initCameraInfos()<0){
-        syslog(LOG_ERR,  "Init CameraInofs error!");
-        return -1;
-    }
+	//seginfo * seg; 
 	if (!spin_rdlock(sbTable.spin)) {
 		for (handle = 0; handle < LvmCount; handle++) {
 			sbinfo = sbTable.table[handle];
@@ -2064,8 +2058,9 @@ DeleteVideoVol(const char *vol_path)
 		}
 		spin_rwunlock(sbTable.spin);
 	}
-	if (handle >= LvmCount)
-		return 0;
+	if (handle >= LvmCount) { 
+        return 0;
+    }	
 	m = 0;
 	while (m < MaxUsers) {
 		if (bit(sbinfo->vnodemapping, m)) {	//ÓÐvnode
@@ -2077,9 +2072,10 @@ DeleteVideoVol(const char *vol_path)
 		}
 		m++;
 	}
-	if (flag == 1)
-		return -2;
-	if (removeCameraInfoByVol(vol_path) < 0) {
+	if (flag == 1) { 
+        return -2;
+    }
+	if (removeCameraInfoByVol(vol_path) < 0) { 
 		return -1;
 	}
 	if (!spin_wrlock(sbTable.spin)) {
@@ -2114,7 +2110,7 @@ DeleteVideoVol(const char *vol_path)
 	free(sbinfo->_bf);
 	free(sbinfo->_es);
 	pthread_mutex_destroy(&sbinfo->mutex);
-	free(sbinfo);
+	free(sbinfo); 
 	return 0;
 }
 
@@ -2216,18 +2212,24 @@ int removeCameraInfo(const char *cameraID)
          ErrorFlag = NOT_EXIST_CAMERALIST;
          return -1;
     }
-    CameraInfo* pCameraInfo = CameraInfos;
+    CameraInfo* preCameraInfo = CameraInfos;
+    CameraInfo* pCameraInfo = CameraInfos->next;
     CameraInfo* pTemp = NULL;
-    while(pCameraInfo->next != NULL)
+    while(pCameraInfo)
     {
-        if(!strcmp(pCameraInfo->next->CameraID, cameraID))
-        {   
-            pTemp = pCameraInfo->next;
-            pCameraInfo->next = pCameraInfo->next->next;
-            free(pTemp);
+        if(!strcmp(pCameraInfo->CameraID, cameraID))
+        {    
+            preCameraInfo->next = pCameraInfo->next; 
+            free(pCameraInfo);
+            pCameraInfo = preCameraInfo->next;
             return 0;
         }
-        pCameraInfo = pCameraInfo->next; 
+        else 
+        {
+            preCameraInfo = pCameraInfo;
+            pCameraInfo = pCameraInfo->next; 
+        }  
+
     }
     ErrorFlag = NOT_EXIST_RECORD;
     return -1;
@@ -2240,17 +2242,22 @@ int removeCameraInfoByVol(const char *vol_path)
          ErrorFlag = NOT_EXIST_CAMERALIST;
          return -1;
     }
-    CameraInfo* pCameraInfo = CameraInfos;
+    CameraInfo* preCameraInfo = CameraInfos;
+    CameraInfo* pCameraInfo = CameraInfos->next;
     CameraInfo* pTemp = NULL;
-    while(pCameraInfo->next != NULL)
+    while(pCameraInfo)
     {
-        if(!strcmp(pCameraInfo->next->lv_name, vol_path))
-        {   
-            pTemp = pCameraInfo->next; 
-            pCameraInfo->next = pCameraInfo->next->next; 
-            free(pTemp); 
+        if(!strcmp(pCameraInfo->lv_name, vol_path))
+        {    
+            preCameraInfo->next = pCameraInfo->next; 
+            free(pCameraInfo);
+            pCameraInfo = preCameraInfo->next;
         }
-        pCameraInfo = pCameraInfo->next; 
+        else 
+        {
+            preCameraInfo = pCameraInfo;
+            pCameraInfo = pCameraInfo->next; 
+        }  
     } 
     return 0;
 }
@@ -2265,8 +2272,7 @@ get_lv_name(LvInfo * lv_info, int max)
 	int i;
     bzero(lv_info, max*sizeof(LvInfo));
     setenv("LVM_SUPPRESS_FD_WARNINGS", "1", 1);
-	if ((fp = popen("lvs -o vg_name,lv_name --noheadings --separator /", "r")) != NULL) {
-        syslog(LOG_INFO,  "vediovol list:");
+	if ((fp = popen("lvs -o vg_name,lv_name --noheadings --separator /", "r")) != NULL) { 
 		while (fgets(line, MAXLINE, fp) != NULL) {
 			i = 0;
 			while (line[i] == ' ' || line[i] == '\t')
@@ -2280,8 +2286,7 @@ get_lv_name(LvInfo * lv_info, int max)
 			strcat(lv_info[num].lv_name, tmp);
 			lv_info[num].length = get_free_vol_size(lv_info[num].lv_name); 
 			if (lv_info[num].length != -1)
-            {         
-                syslog(LOG_INFO, "vediovol_%d:%s, freesize:%ld",num,lv_info[num].lv_name,lv_info[num].length);
+            {          
                 num++;
             }
             else
@@ -2291,8 +2296,7 @@ get_lv_name(LvInfo * lv_info, int max)
 			if (num >= max)
 				break;
 		}
-		pclose(fp);
-        syslog(LOG_INFO,  "vediovol list end.");
+		pclose(fp); 
 	}
 	return num;
 }
@@ -2333,6 +2337,7 @@ int initCameraInfos()
 				 syslog(LOG_ERR, "read vbitmap error!");
                  return -1;
             }
+            syslog(LOG_INFO, "vediovol_%d:%s, freesize:%ldM.",i,lv[i].lv_name,lv[i].length);
             count=0;
             while(count<MaxUsers) {
                 if(bit(vbitmap,count)){
@@ -2343,14 +2348,14 @@ int initCameraInfos()
                           return -1;
                        }
                        buf_to_vnode(buf,&v);
-                       addCameraInfo(v.cameraid,lv_name);  
+                       addCameraInfo(v.cameraid,lv_name);
+                       syslog(LOG_INFO, "vediovol_%d->%s", i, v.cameraid);
                 }
             count++;
             }
             close(fd);
-            free(vbitmap);   
-     }
-     showCameraList();
+            free(vbitmap);  
+     } 
      return 0;
 }
 
