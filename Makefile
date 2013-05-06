@@ -17,6 +17,19 @@ NVRD_OBJ = nvr_svc.o nvr_sif.o nvr_srp.o multi_stream.o syslog.o init.o
 DEVICE_OBJ = rd_wr.o bitops_add.o util.o parms.o
 #	cc  -o ves  -g -DDebug  rd_wr.o bitops_add.o parms.o util.o  init.o -pthread
 
+CONFIG = JYJ
+
+ifeq ($(CONFIG), TAM) 
+#	CFLAGS += -DSPACE_TIME_SYNCHRONIZATION
+#	CFLAGS += -DPARALLELRECORD 
+#	CFLAGS += -DUPDATE
+endif
+
+ifeq ($(CONFIG), JYJ) 
+	CFLAGS += -DSPACE_TIME_SYNCHRONIZATION
+#	CFLAGS += -DPARALLELRECORD 
+#	CFLAGS += -DUPDATE
+endif
 
 all: ${PROGS}
 
