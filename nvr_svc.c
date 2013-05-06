@@ -11,28 +11,14 @@
 #include <memory.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <signal.h>
 #include <unistd.h>
-#include <sys/resource.h>
 #include "syslog.h" 
 #include "init.h" 
 
 #ifndef SIG_PF
 #define SIG_PF void(*)(int)
 #endif
-
-#define NVRDVER "1.165"
-#define R_UNLIMITED	(~0UL)
-
-char ClientIP[IPLEN];
-unsigned short int ClientPort;
-int EXIT_FLAG = 0;
-
-int debug_level = 0;
-static int logid = LOG_VARLOG;
-static int logmask = 7;
-
-
+ 
 static void
 nvrprog_1(struct svc_req *rqstp, register SVCXPRT * transp)
 {
@@ -211,116 +197,13 @@ nvrprog_1(struct svc_req *rqstp, register SVCXPRT * transp)
 	return;
 }
 
-int set_corefile(const unsigned long long size)
-{
-	struct rlimit lmt;
-
-	lmt.rlim_cur = lmt.rlim_max = (size == R_UNLIMITED ? 
-			RLIM_INFINITY : size);
-	if (setrlimit(RLIMIT_CORE, &lmt) != 0)
-		return -1;
-	system("echo \"core.%e.%p\" > /proc/sys/kernel/core_pattern");
-	return 0;
-}
-
-static void get_opt(int argc, char **argv)
-{
-	int opt, debug = 0, exit_code = 0;
-
-	while ((opt = getopt(argc, argv, "dcvlh")) != -1) { 
-		switch (opt) {
-			case 'd':
-				debug = 1;
-				logid = LOG_CONSOLE;
-				break;
-			case 'c':
-				set_corefile(R_UNLIMITED);
-				break;
-			case 'v':
-				if (argc != 2) {
-					exit_code = -1;
-					goto usage;
-				}
-                printf("%s version %s build:%s %s\n", argv[0], 
-                                    NVRDVER, __DATE__, __TIME__); 
-				exit(0);
-            case 'l':
-                if (argc != 3) { 
-					exit_code = -1;
-					goto usage;
-                }
-                logmask = atoi(argv[2]);
-                if (logmask >= LOG_EMERG && logmask <= LOG_DEBUG) {                  
-                    break;
-                }
-                else { 
-                    exit_code = -1;
-					goto usage;
-                }
-			case 'h':
-				if (argc != 2)
-					exit_code = -1;
-				goto usage;
-			default:
-				exit_code = -1;
-				goto usage;
-		}
-	}
-
-	if (!debug)
-		daemon(1, 0);
-	return;
-
-usage:
-	printf("Usage: %s [options]\n"
-			"\t-d: print debug message on console\n"
-			"\t-c: dump core file\n"
-			"\t-l value: set syslog level to 0~7\n"
-			"\t-v: print version\n"
-			"\t-h: show help\n", argv[0]);
-	exit(exit_code);
-}
-
-void
-sigpipeHandler(int sig)
-{
-	syslog(LOG_INFO, "got sigpipe signal %d", sig);
-}
 
 int
 main(int argc, char **argv)
-{    
-    get_opt(argc, argv);
-
-	//open logfile
-	openlog(argv[0], LOG_CONS | LOG_PID, logid);
-	//end 
-	setlogmask(LOG_UPTO(logmask));
-    
-    if(already_running() > 0) {
-        syslog(LOG_INFO, "%s already running.", argv[0]);
-        exit(1);
-    }
-    
-#ifdef SPACE_TIME_SYNCHRONIZATION
-    syslog(LOG_INFO, "version %s-space_time_synchronization build:%s %s ", NVRDVER, __DATE__, __TIME__);
-#else
-    syslog(LOG_INFO, "version %s build:%s %s", NVRDVER, __DATE__, __TIME__);
-#endif
-
+{
+    firstinit(argc, argv);  
 	register SVCXPRT *transp;
-	pthread_t pid, pid1,pid2;
-	pthread_t pid3;
-    int listenfd;
-
-    
-    if(initCameraInfos()<0){
-        syslog(LOG_ERR, "init camerainfos fail.");
-        exit(1);
-    }
-    
 	pmap_unset(NVRPROG, NVRVERS);
-
 	transp = svcudp_create(RPC_ANYSOCK);
 	if (transp == NULL) {
 		fprintf(stderr, "%s", "cannot create udp service.");
@@ -332,7 +215,6 @@ main(int argc, char **argv)
 		syslog(LOG_ERR, "[RPC]Unable to register by udp!*exit*");
 		exit(1);
 	}
-
 	transp = svctcp_create(RPC_ANYSOCK, 0, 0);
 	if (transp == NULL) {
 		fprintf(stderr, "%s", "cannot create tcp service.");
@@ -344,57 +226,10 @@ main(int argc, char **argv)
 		syslog(LOG_ERR, "[RPC]Unable to register by tcp!*exit*");
 		exit(1);
 	}
-	if (pthread_create(&pid, NULL, VolOpThread, NULL) != 0) {
-		fprintf(stderr, "Create VolOPThread failure.\n");
-		syslog(LOG_ERR, "[RPC]Create VolOPThread failure!*exit*");
-		exit(1);
-	}
-	if (pthread_create(&pid1, NULL, WriteTnodeThread, NULL) != 0) {
-		fprintf(stderr, "Create WriteTnodeThread failure.\n");
-		syslog(LOG_ERR, "[RPC]Create WriteTnodeThread failure!*exit*");
-		exit(1);
-	}
-
-    listenfd = tcp_create();
-    if (listenfd < 0) {
-        syslog(LOG_ERR, "TCP creat failed!\n");  
-        exit(1);
-    }
-    
-#ifndef PARALLELRECORD 
-	if (pthread_create(&pid2, NULL, SerialRecordThread, (void*)listenfd) != 0) {
-		fprintf(stderr, "Create SerialRecordThread failure.\n");
-		syslog(LOG_ERR, "Create SerialRecordThread failure!*exit*");
-		exit(1);
-	}
-#else
-    if (pthread_create(&pid2, NULL, ParallelRecordThread, (void*)listenfd) != 0) {
-        fprintf(stderr, "Create ParallelRecordThread failure.\n");
-        syslog(LOG_ERR, "Create ParallelRecordThread failure!*exit*");
-        exit(1);
-    }
-#endif
-
-#ifdef UPDATE
-	if (pthread_create(&pid3, NULL, UpdateThread, NULL) != 0) { 
-		syslog(LOG_ERR,"Create UpdateThread failure!*exit*");
-		exit(1);
-	}  
-#endif
-
-	struct sigaction act;
-	act.sa_handler = sigpipeHandler;
-	sigemptyset(&act.sa_mask);
-	act.sa_flags = 0;
-	sigaction(SIGPIPE, &act, 0);
-
 	svc_run();
 	fprintf(stderr, "%s", "svc_run returned");
-	syslog(LOG_ERR, "[RPC] Main Process return!*exit*");
-	
-	//added by wsr 20121030
-	closelog();
-	//end
+	syslog(LOG_ERR, "[RPC] Main Process return!*exit*");	 
+	closelog(); 
 	exit(1);
 	/* NOTREACHED */ 
 }

@@ -1,127 +1,8 @@
 #include "init.h"
-void
-clearInactiveStreams()
-{
-	syslog(LOG_DEBUG,  "clearing inactive download streams...");
-	int i = 0; 
-	for (; i < MAX_STREAMS; i++) { 
-		if (pDInfo[i] && (time(NULL) - pDInfo[i]->lastReadTime > 30))
-		{
-			syslog(LOG_INFO, "closing a inactive download stream, IPC:%s, handle:0x%x.", pDInfo[i]->CameraID, pDInfo[i]->dHandle); 
-    		if(CloseRecordSeg(pDInfo[i]->dHandle, NULL) < 0){
-    			syslog(LOG_ERR,  "close the download stream fail, IPC:%s, handle:0x%x, errno:%u.",pDInfo[i]->CameraID, pDInfo[i]->dHandle, ErrorFlag);
-    		} else {
-                syslog(LOG_INFO,  "close the download stream success, IPC:%s, handle:0x%x.",pDInfo[i]->CameraID, pDInfo[i]->dHandle);
-            }
-		    releaseDownloadInfo(&pDInfo[i]);
-		}
-	}
-    syslog(LOG_DEBUG,  "clear inactive download streams sucess.");
-}
 
-void *
-WriteTnodeThread(void *arg)
-{
-	syslog(LOG_INFO,  "start write tnode thread.");
-	int i = 0;
-	for (;; i = (i + 1) % MAX_STREAMS) {
-		if (i == 0)
-			sleep(20);
-		pthread_rwlock_rdlock(&SInfo_PRW);
-		if (streamInfos[i] == NULL || streamInfos[i]->count < WriteLen) {
-			pthread_rwlock_unlock(&SInfo_PRW);
-			continue;
-		}
+static int logid = LOG_VARLOG;
+static int logmask = 7;
 
-		if (write_back_tnodes(streamInfos[i]->sbinfo, streamInfos[i]->v, streamInfos[i]->vi, streamInfos[i]) < 0) {
-			syslog(LOG_ERR,  "write back tnodes fail, IPC:%s, errno:%u.", streamInfos[i]->cameraID, ErrorFlag);
-		}
-		streamInfos[i]->count = 0;
-		if (put_vnode(streamInfos[i]->sbinfo, streamInfos[i]->v, NULL, streamInfos[i]->ID) < 0) {
-			syslog(LOG_ERR, "put vnode fail, IPC:%s, errno:%u.", streamInfos[i]->cameraID, ErrorFlag);
-		}
-		pthread_rwlock_unlock(&SInfo_PRW);
-
-	}
-}
- 
-void *
-VolOpThread(void *arg)
-{
-	syslog(LOG_INFO,  "start volume operation thread.");
-	CreatRecVolMsg creatMsg;
-	DelRecVolMsg delMsg;
-	DelVideoVolMsg delVideoMsg;
-	ResMsg resMsg;
-	//key_t sendKey,recvKey;
-	int sendQID, recvQID;
-	ssize_t ret;
-
-	//recvKey = ftok("/opt/HTRaid/conf/camera.conf",1);
-	//sendKey = ftok("/opt/HTRaid/conf/msgfile",1);
-
-	sendQID = msgget((key_t) 706504, 0666 | IPC_CREAT);
-	recvQID = msgget((key_t) 706507, 0666 | IPC_CREAT);
-	if (sendQID == -1 || recvQID == -1) {
-		syslog(LOG_ERR,  "msgget failed with error: %d. *exit*", errno);
-		exit(1);
-	}
-    
-	while (1) {
-		ret = msgrcv(recvQID, (void *)&creatMsg, sizeof(CreatRecVolMsg) - sizeof(long int), CREAT_REC_VOL_ARGS, IPC_NOWAIT);
-		if (ret != -1) {
-			resMsg.msgType = CREAT_REC_VOL_RES;
-			resMsg.result = CreateRecordVol(creatMsg.volumeid,
-							creatMsg.name,
-							creatMsg.alias, creatMsg.savedDays, creatMsg.delPolicy, creatMsg.encodeType, creatMsg.blocks);
-			if(resMsg.result < 0)
-			{
-				syslog(LOG_ERR,  "create record volume %s in %s faile.(errno:%u).", creatMsg.name, creatMsg.volumeid, ErrorFlag);
-			}
-			if (msgsnd(sendQID, (void *)&resMsg, sizeof(int), 0) == -1) {
-				syslog(LOG_ERR, "send msg failed when create record volume %s in %s.", creatMsg.name, creatMsg.volumeid);
-				break;
-			}
-			continue;
-		}
-
-		if (msgrcv(recvQID, (void *)&delMsg, sizeof(DelRecVolMsg) - sizeof(long int), DEL_REC_VOL_ARGS, IPC_NOWAIT) != -1) {
-			resMsg.msgType = DEL_REC_VOL_RES;
-			resMsg.result = DeleteRecordVol(delMsg.cameraID, delMsg.mode);
-			if (msgsnd(sendQID, (void *)&resMsg, sizeof(int), 0) == -1) {
-				fprintf(stderr, "send msg failed\n");
-				syslog(LOG_ERR, "send msg failed when delete record volume %s.", delMsg.cameraID);
-				break;
-			}
-			continue;
-		}
-
-		if (msgrcv(recvQID, (void *)&delVideoMsg, sizeof(DelVideoVolMsg) - sizeof(long int), DEL_VIDEO_VOL_ARGS, IPC_NOWAIT) != -1) {
-			resMsg.msgType = DEL_VIDEO_VOL_RES;
-			resMsg.result = DeleteVideoVol(delVideoMsg.volName);
-			if (msgsnd(sendQID, (void *)&resMsg, sizeof(int), 0) == -1) {
-				fprintf(stderr, "send msg failed\n");
-				syslog(LOG_ERR, "send msg failed when delete videovol %s.", delVideoMsg.volName);
-				break;
-			}
-			continue;
-		}
-
-		sleep(1);
-	}
-	syslog(LOG_ERR, "VolOPThread exit!");
-	pthread_exit(0);
-}
-
-void *
-UpdateThread(void *arg)
-{
-    syslog(LOG_INFO,  "start update thread.");
-    while(1) {
-        sleep(120);
-        clearInactiveStreams(); 
-    }
-}
 
 int lockfile(int fd)
 {
@@ -158,62 +39,6 @@ int already_running(void)
     sprintf(buf, "%ld", (long)getpid());
     write(fd, buf, strlen(buf) + 1);
     return 0;
-}
-
-int isRunning()
-{
-    pid_t pid = -1, file_pid = -1;
-    FILE *fp = NULL;
-    pid = getpid();
-    char cmd[256];
-    bzero(cmd, 256);
-    if(access(PID_FILE, 0)<0)
-    { 
-        sprintf(cmd, "%u\0", pid);
-        syslog(LOG_INFO, "start nvrd (pid:%u) success! ",pid);
-        fp = fopen(PID_FILE, "w+");
-        fputs(cmd, fp);
-        fclose(fp);
-        return 0;
-    }
-    if ((fp = fopen(PID_FILE, "r")) == NULL) 
-        
-    {
-        syslog(LOG_ERR, "open pidfile error!");
-        return -1;
-	}
-
-    if(fgets(cmd, 255, fp) == NULL)
-    {
-        fclose(fp);
-        return -1;
-    } 
-    fclose(fp);
-    sscanf(cmd, "%u", &file_pid); 
-    sprintf(cmd, "ps -ef|grep nvrd|awk '{print $2}'|grep %u\0", file_pid);
-    if(NULL == (fp= popen(cmd, "r")))
-    {
-        syslog(LOG_ERR, "call popen failed!");
-        return -1;
-    }
-    else
-    { 
-        while(fgets(cmd, 255, fp) != NULL)
-        {
-            
-            sscanf(cmd, "%u", &file_pid);
-            syslog(LOG_ERR, "start failed! nvrd (pid:%u) is exist!",file_pid );
-            fclose(fp);
-            return 1;
-        }
-        fclose(fp); 
-        sprintf(cmd, "%u\0", pid);
-        fp = fopen(PID_FILE, "w+");
-        fputs(cmd, fp);
-        fclose(fp);
-        syslog(LOG_INFO, "start nvrd (pid:%u) success! ",pid);
-        return 0;
-    }
 }
 
 int tcp_create()
@@ -297,6 +122,7 @@ int tcp_recv(int fd, char *buf, int len, int flags)
     }
     return recv_count;
 }
+
 int enc_rec_result(char *presult, int* pret, unsigned int* perron)
 {
     char headchar = 'h';
@@ -309,7 +135,8 @@ int enc_rec_result(char *presult, int* pret, unsigned int* perron)
     presult += sizeof(unsigned int);
     memcpy(presult, &tailchar, sizeof(char)); 
     return 0;
-} 
+}
+
 int dec_rec_head(char *phead, unsigned int* precordhandle, unsigned int* pdatalen, unsigned int* pbegintime)
 {
     char headchar = '\0';
@@ -399,8 +226,9 @@ void *recordthread(void* arg)
             break;
         }
       }
-      close(socket);
-      syslog(LOG_INFO, "close record socket %d.", socket);
+      syslog(LOG_INFO, "recordthread exit! close record socket %d", socket);
+      close(socket); 
+      pthread_exit(0);
 }
 
 void *SerialRecordThread(void* arg)
@@ -459,6 +287,8 @@ void *SerialRecordThread(void* arg)
                 break;
         }
     }
+    syslog(LOG_INFO, "RecordThread exit!");
+    pthread_exit(0);
 }
 
 void *ParallelRecordThread(void* arg)
@@ -483,6 +313,263 @@ void *ParallelRecordThread(void* arg)
         }
         pthread_detach(pt);
         syslog(LOG_DEBUG, "create new record thread, sockfd:%d.", client_socket);
-    }    
+    }
+}
+
+void *
+WriteTnodeThread(void *arg)
+{
+	syslog(LOG_INFO,  "start write tnode thread.");
+	int i = 0;
+	for (;; i = (i + 1) % MAX_STREAMS) {
+		if (i == 0)
+			sleep(20);
+		pthread_rwlock_rdlock(&SInfo_PRW);
+		if (streamInfos[i] == NULL || streamInfos[i]->count < WriteLen) {
+			pthread_rwlock_unlock(&SInfo_PRW);
+			continue;
+		}
+
+		if (write_back_tnodes(streamInfos[i]->sbinfo, streamInfos[i]->v, streamInfos[i]->vi, streamInfos[i]) < 0) {
+			syslog(LOG_ERR,  "write back tnodes fail, IPC:%s, errno:%u.", streamInfos[i]->cameraID, ErrorFlag);
+		}
+		streamInfos[i]->count = 0;
+		if (put_vnode(streamInfos[i]->sbinfo, streamInfos[i]->v, NULL, streamInfos[i]->ID) < 0) {
+			syslog(LOG_ERR, "put vnode fail, IPC:%s, errno:%u.", streamInfos[i]->cameraID, ErrorFlag);
+		}
+		pthread_rwlock_unlock(&SInfo_PRW);
+
+	}
+    syslog(LOG_INFO, "WriteTnodeThread exit!");
+    pthread_exit(0);
+}
+ 
+void *
+VolOpThread(void *arg)
+{
+	syslog(LOG_INFO,  "start volume operation thread.");
+	CreatRecVolMsg creatMsg;
+	DelRecVolMsg delMsg;
+	DelVideoVolMsg delVideoMsg;
+	ResMsg resMsg;
+	//key_t sendKey,recvKey;
+	int sendQID, recvQID;
+	ssize_t ret;
+
+	//recvKey = ftok("/opt/HTRaid/conf/camera.conf",1);
+	//sendKey = ftok("/opt/HTRaid/conf/msgfile",1);
+
+	sendQID = msgget((key_t) 706504, 0666 | IPC_CREAT);
+	recvQID = msgget((key_t) 706507, 0666 | IPC_CREAT);
+	if (sendQID == -1 || recvQID == -1) {
+		syslog(LOG_ERR,  "msgget failed with error: %d. *exit*", errno);
+		exit(1);
+	}
+    
+	while (1) {
+		ret = msgrcv(recvQID, (void *)&creatMsg, sizeof(CreatRecVolMsg) - sizeof(long int), CREAT_REC_VOL_ARGS, IPC_NOWAIT);
+		if (ret != -1) {
+			resMsg.msgType = CREAT_REC_VOL_RES;
+			resMsg.result = CreateRecordVol(creatMsg.volumeid,
+							creatMsg.name,
+							creatMsg.alias, creatMsg.savedDays, creatMsg.delPolicy, creatMsg.encodeType, creatMsg.blocks);
+			if(resMsg.result < 0)
+			{
+				syslog(LOG_ERR,  "create record volume %s in %s faile.(errno:%u).", creatMsg.name, creatMsg.volumeid, ErrorFlag);
+			}
+			if (msgsnd(sendQID, (void *)&resMsg, sizeof(int), 0) == -1) {
+				syslog(LOG_ERR, "send msg failed when create record volume %s in %s.", creatMsg.name, creatMsg.volumeid);
+				break;
+			}
+			continue;
+		}
+
+		if (msgrcv(recvQID, (void *)&delMsg, sizeof(DelRecVolMsg) - sizeof(long int), DEL_REC_VOL_ARGS, IPC_NOWAIT) != -1) {
+			resMsg.msgType = DEL_REC_VOL_RES;
+			resMsg.result = DeleteRecordVol(delMsg.cameraID, delMsg.mode);
+			if (msgsnd(sendQID, (void *)&resMsg, sizeof(int), 0) == -1) {
+				fprintf(stderr, "send msg failed\n");
+				syslog(LOG_ERR, "send msg failed when delete record volume %s.", delMsg.cameraID);
+				break;
+			}
+			continue;
+		}
+
+		if (msgrcv(recvQID, (void *)&delVideoMsg, sizeof(DelVideoVolMsg) - sizeof(long int), DEL_VIDEO_VOL_ARGS, IPC_NOWAIT) != -1) {
+			resMsg.msgType = DEL_VIDEO_VOL_RES;
+			resMsg.result = DeleteVideoVol(delVideoMsg.volName);
+			if (msgsnd(sendQID, (void *)&resMsg, sizeof(int), 0) == -1) {
+				fprintf(stderr, "send msg failed\n");
+				syslog(LOG_ERR, "send msg failed when delete videovol %s.", delVideoMsg.volName);
+				break;
+			}
+			continue;
+		}
+
+		sleep(1);
+	}
+	syslog(LOG_INFO, "VolOPThread exit!");
+	pthread_exit(0);
+}
+
+void *
+UpdateThread(void *arg)
+{
+    syslog(LOG_INFO,  "start update thread.");
+    while(1) {
+        sleep(120);
+        clearInactiveStreams(); 
+    }
+	syslog(LOG_INFO, "UpdateThread exit!");
+	pthread_exit(0);    
+}
+
+int set_corefile(const unsigned long long size)
+{
+	struct rlimit lmt;
+
+	lmt.rlim_cur = lmt.rlim_max = (size == R_UNLIMITED ? 
+			RLIM_INFINITY : size);
+	if (setrlimit(RLIMIT_CORE, &lmt) != 0)
+		return -1;
+	system("echo \"core.%e.%p\" > /proc/sys/kernel/core_pattern");
+	return 0;
+}
+
+static void get_opt(int argc, char **argv)
+{
+	int opt, debug = 0, exit_code = 0;
+
+	while ((opt = getopt(argc, argv, "dcvlh")) != -1) { 
+		switch (opt) {
+			case 'd':
+				debug = 1;
+				logid = LOG_CONSOLE;
+				break;
+			case 'c':
+				set_corefile(R_UNLIMITED);
+				break;
+			case 'v':
+				if (argc != 2) {
+					exit_code = -1;
+					goto usage;
+				}
+                printf("%s version %s build:%s %s\n", argv[0], 
+                                    NVRDVER, __DATE__, __TIME__); 
+				exit(0);
+            case 'l':
+                if (argc != 3) { 
+					exit_code = -1;
+					goto usage;
+                }
+                logmask = atoi(argv[2]);
+                if (logmask >= LOG_EMERG && logmask <= LOG_DEBUG) {                  
+                    break;
+                }
+                else { 
+                    exit_code = -1;
+					goto usage;
+                }
+			case 'h':
+				if (argc != 2)
+					exit_code = -1;
+				goto usage;
+			default:
+				exit_code = -1;
+				goto usage;
+		}
+	}
+
+	if (!debug)
+		daemon(1, 0);
+	return;
+
+usage:
+	printf("Usage: %s [options]\n"
+			"\t-d: print debug message on console\n"
+			"\t-c: dump core file\n"
+			"\t-l value: set syslog level to 0~7\n"
+			"\t-v: print version\n"
+			"\t-h: show help\n", argv[0]);
+	exit(exit_code);
+}
+
+void
+sigpipeHandler(int sig)
+{
+	syslog(LOG_INFO, "got sigpipe signal %d", sig);
+}
+ 
+void firstinit(int argc, char **argv)
+{
+	pthread_t pid, pid1,pid2,pid3; 
+    int listenfd; 
+    get_opt(argc, argv); 
+	openlog(argv[0], LOG_CONS | LOG_PID, logid); 
+	setlogmask(LOG_UPTO(logmask));
+    
+    if(already_running() > 0) {
+        syslog(LOG_INFO, "%s already running.", argv[0]);
+        exit(1);
+    }
+    
+    syslog(LOG_INFO, "nvrd start...");
+
+#ifdef SPACE_TIME_SYNCHRONIZATION
+    syslog(LOG_INFO, "version %s-space_time_synchronization build:%s %s ", NVRDVER, __DATE__, __TIME__);
+#else
+    syslog(LOG_INFO, "version %s build:%s %s.", NVRDVER, __DATE__, __TIME__);
+#endif    
+
+    if(initCameraInfos()<0){
+        syslog(LOG_ERR, "init camerainfos fail.");
+        exit(1);
+    }
+    
+    listenfd = tcp_create();
+    if (listenfd < 0) {
+        syslog(LOG_ERR, "TCP Server creat failed!\n");  
+        exit(1);
+    }
+
+	if (pthread_create(&pid, NULL, VolOpThread, NULL) != 0) {
+		fprintf(stderr, "Create VolOPThread failure.\n");
+		syslog(LOG_ERR, "Create VolOPThread failure!*exit*");
+		exit(1);
+	} 
+	if (pthread_create(&pid1, NULL, WriteTnodeThread, NULL) != 0) {
+		fprintf(stderr, "Create WriteTnodeThread failure.\n");
+		syslog(LOG_ERR, "Create WriteTnodeThread failure!*exit*");
+		exit(1);
+	} 
+
+    
+#ifndef PARALLELRECORD 
+	if (pthread_create(&pid2, NULL, SerialRecordThread, (void*)listenfd) != 0) {
+		fprintf(stderr, "Create SerialRecordThread failure.\n");
+		syslog(LOG_ERR, "Create SerialRecordThread failure!*exit*");
+		exit(1);
+	}
+#else
+    if (pthread_create(&pid2, NULL, ParallelRecordThread, (void*)listenfd) != 0) {
+        fprintf(stderr, "Create ParallelRecordThread failure.\n");
+        syslog(LOG_ERR, "Create ParallelRecordThread failure!*exit*");
+        exit(1);
+    }
+#endif 
+
+#ifdef UPDATE
+	if (pthread_create(&pid3, NULL, UpdateThread, NULL) != 0) { 
+		syslog(LOG_ERR,"Create UpdateThread failure!*exit*");
+		exit(1);
+	} 
+#endif
+    /* set some signal handling */
+    struct sigaction act;
+    act.sa_handler = sigpipeHandler;
+    sigemptyset(&act.sa_mask);
+    act.sa_flags = 0;
+    sigaction(SIGPIPE, &act, 0); 
+    return;
 }
 

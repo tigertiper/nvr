@@ -17,12 +17,18 @@
 #include <sys/ioctl.h>
 #include <time.h>
 #include <sys/time.h>
+#include <sys/resource.h>
+#include <signal.h>
 #include "nvr.h" 
 #include "rd_wr.h"
 #include "multi_stream.h"
 #include "syslog.h" 
 #include"info.h" 
 #include "multi_stream.h"
+
+//#define SPACE_TIME_SYNCHRONIZATION
+//#define PARALLELRECORD 
+//#define UPDATE
 
 
 #define SERV_PORT 8000 
@@ -31,31 +37,29 @@
 #define OPEN_MAX 256
 #define LOCKFILE "/var/run/nvrd.pid"
 #define LOCKMODE (S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)
+#define NVRDVER "1.165"
+#define R_UNLIMITED	(~0UL)
+
 
 extern pthread_rwlock_t DInfo_PRW;
 extern pthread_rwlock_t SInfo_PRW;
-extern char ClientIP[IPLEN];
-extern unsigned short int ClientPort;
-extern int debug_level; 
-
-
+char ClientIP[IPLEN];
+unsigned short int ClientPort; 
 static int retcode;
 static READres readres; 
 static HEADERinfo headerInfo; 
 static char readBuf[MAX_READ_SIZE];
 static char headBuf[MAX_HEADER_LENGTH]; 
 
-
-void clearInactiveStreams();
 int tcp_create();
-int already_running(void);
-int isRunning();
+int already_running(void); 
 void * UpdateThread(void *arg);
 void *VolOpThread(void *);
 void *WriteTnodeThread(void *);
 void *SerialRecordThread(void* arg);
 void *ParallelRecordThread(void* arg);
-void *UpdateThread(void *arg);
+void *UpdateThread(void *arg); 
+void firstinit();
 
 #endif
 

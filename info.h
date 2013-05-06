@@ -10,9 +10,6 @@
 #endif
 
 #define _FILE_OFFSET_BITS 64
-//#define SPACE_TIME_SYNCHRONIZATION
-//#define PARALLELRECORD 
-//#define UPDATE
 
 #include<pthread.h>
 #include<string.h>
@@ -56,9 +53,6 @@
 #define TimeNULL -1
 #define FILE_SYS_NAME "VEDIO_\0"
 #define STRING_NULL   "NULL_\0"
-//#define PARM_FILE     "./zhangke.conf"
-//#define PARM_FILE     "/opt/HTRaid/conf/camera.conf"
-#define PID_FILE "/var/lock/NVRD.PID"
 
 
 #define CONF_LEN      (VolNameLength+CNameLength+20)

@@ -1,4 +1,4 @@
- #include "init.h"
+#include "init.h" 
  
 #define PRC_SVC
 
@@ -412,6 +412,25 @@ nvrproc_delete(DELargs delargs)
 	return ret;
 }
 
+void
+clearInactiveStreams()
+{
+	syslog(LOG_DEBUG,  "clearing inactive download streams...");
+	int i = 0; 
+	for (; i < MAX_STREAMS; i++) { 
+		if (pDInfo[i] && (time(NULL) - pDInfo[i]->lastReadTime > 30))
+		{
+			syslog(LOG_INFO, "closing a inactive download stream, IPC:%s, handle:0x%x.", pDInfo[i]->CameraID, pDInfo[i]->dHandle); 
+    		if(CloseRecordSeg(pDInfo[i]->dHandle, NULL) < 0){
+    			syslog(LOG_ERR,  "close the download stream fail, IPC:%s, handle:0x%x, errno:%u.",pDInfo[i]->CameraID, pDInfo[i]->dHandle, ErrorFlag);
+    		} else {
+                syslog(LOG_INFO,  "close the download stream success, IPC:%s, handle:0x%x.",pDInfo[i]->CameraID, pDInfo[i]->dHandle);
+            }
+		    releaseDownloadInfo(&pDInfo[i]);
+		}
+	}
+    syslog(LOG_DEBUG,  "clear inactive download streams sucess.");
+}
 
 unsigned int
 nvrproc_login(LOGINargs loginargs)
