@@ -26,10 +26,6 @@
 #include"info.h" 
 #include "multi_stream.h"
 
-//#define SPACE_TIME_SYNCHRONIZATION
-//#define PARALLELRECORD 
-//#define UPDATE
-
 
 #define SERV_PORT 8000 
 #define REC_HEAD_SIZE 14 
@@ -37,7 +33,13 @@
 #define OPEN_MAX 256
 #define LOCKFILE "/var/run/nvrd.pid"
 #define LOCKMODE (S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)
+#define VERDATA "2013.05.21"
 #define NVRDVER "1.165"
+#ifdef SPACE_TIME_SYNCHRONIZATION
+#define PRJNAME "JYJ"
+#else
+#define PRJNAME "TAM"
+#endif
 #define R_UNLIMITED	(~0UL)
 
 

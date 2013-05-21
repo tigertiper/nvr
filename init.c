@@ -454,8 +454,8 @@ static void get_opt(int argc, char **argv)
 					exit_code = -1;
 					goto usage;
 				}
-                printf("%s version %s build:%s %s\n", argv[0], 
-                                    NVRDVER, __DATE__, __TIME__); 
+                printf("version:%s-%s-%s, build:%s %s\n", 
+                                    NVRDVER, VERDATA, PRJNAME, __DATE__, __TIME__); 
 				exit(0);
             case 'l':
                 if (argc != 3) { 
@@ -515,12 +515,8 @@ void firstinit(int argc, char **argv)
     
     syslog(LOG_INFO, "nvrd start...");
 
-#ifdef SPACE_TIME_SYNCHRONIZATION
-    syslog(LOG_INFO, "version %s-space_time_synchronization build:%s %s ", NVRDVER, __DATE__, __TIME__);
-#else
-    syslog(LOG_INFO, "version %s build:%s %s.", NVRDVER, __DATE__, __TIME__);
-#endif    
-
+    syslog(LOG_INFO, "version:%s-%s-%s, build:%s %s.", NVRDVER, VERDATA, PRJNAME, __DATE__, __TIME__);
+ 
     if(initCameraInfos()<0){
         syslog(LOG_ERR, "init camerainfos fail.");
         exit(1);
