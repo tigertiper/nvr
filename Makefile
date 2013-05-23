@@ -3,79 +3,63 @@
 #CC = g++
 CC = gcc
 
-SRC = nvr.c nvr_sdk.c nvr_cif.c nvr_clnt.c nvr_sif.c nvr_srp.c nvr_svc.c nvr.x
-
 PROGS = nvrd
 
-NVR_GFILES = nvr_clnt.c nvr_cif.c nvr_sdk.c nvr_test.c nvr.h nvr_sdk.h nvr_common.h Debug.h
+NVRD_OBJ = rd_wr.o bitops_add.o util.o parms.o \
+		   nvr_svc.o nvr_sif.o nvr_xdr.o nvr_srp.o multi_stream.o syslog.o init.o
 
-NVRD_GFILES = nvr_svc.c nvr_sif.c nvr_srp.c nvr.h multi_stream.c syslog.c init.c
+#CFLAGS = -Wall -o2
 
-NVR_OBJ =  nvr_clnt.o nvr_cif.o nvr_test.o nvr_sdk.o
-NVRD_OBJ = nvr_svc.o nvr_sif.o nvr_srp.o multi_stream.o syslog.o init.o
-
-DEVICE_OBJ = rd_wr.o bitops_add.o util.o parms.o
-#	cc  -o ves  -g -DDebug  rd_wr.o bitops_add.o parms.o util.o  init.o -pthread
+LIBS = -lpthread
 
 CONFIG = JYJ
 
-ifeq ($(CONFIG), TAM) 
+ifeq ($(CONFIG), TAM)
+	CFLAGS += -DTAM
 #	CFLAGS += -DSPACE_TIME_SYNCHRONIZATION
 #	CFLAGS += -DPARALLELRECORD 
 #	CFLAGS += -DUPDATE
 endif
 
-ifeq ($(CONFIG), JYJ) 
+ifeq ($(CONFIG), JYJ)
+	CFLAGS += -DJYJ
 	CFLAGS += -DSPACE_TIME_SYNCHRONIZATION
 #	CFLAGS += -DPARALLELRECORD 
 #	CFLAGS += -DUPDATE
 endif
 
+ifeq ($(CONFIG), NAR)
+	CFLAGS += -DNAR
+	CFLAGS += -DSPACE_TIME_SYNCHRONIZATION
+#	CFLAGS += -DPARALLELRECORD 
+#	CFLAGS += -DUPDATE
+	CFLAGS += -DMEDIATRANSTORE
+	LIBS += -Wl,-rpath,./lib -L./lib -lhcnetsdk -lhpr
+	NVRD_OBJ += MediaTranStore.o MediaSDK.o
+endif
+
 all: ${PROGS}
 
-nvr:${NVR_OBJ} nvr_xdr.o
-	${CC} -g ${CFLAGS} -o $@ ${NVR_OBJ} nvr_xdr.o -lpthread
-	chmod 755 nvr
-
-${NVR_OBJ}:${NVR_GFILES} nvr_xdr.c
-	${CC} -g ${CFLAGS} -c $*.c nvr_xdr.c
 	
-nvrd:$(NVRD_OBJ) nvr_xdr.o ${DEVICE_OBJ}
-	${CC} -g ${CFLAGS} -o $@ ${NVRD_OBJ} nvr_xdr.o ${DEVICE_OBJ} -lpthread
-	chmod 755 nvrd
+${PROGS}:$(NVRD_OBJ)
+	${CC} -g ${CFLAGS} -o $@ $^ ${LIBS}
+	chmod 755 $@
 
-${NVRD_OBJ}:${NVRD_GFILES} nvr_xdr.c
-	${CC} -g ${CFLAGS} -c $*.c nvr_xdr.c 
+${NVRD_OBJ}:%.o:%.c
+	${CC} -g ${CFLAGS} -c $< -o $@
+	
 
-
-bitops_add.o:bitops_add.c bitops_add.h
-	cc -c  bitops_add.c 
-util.o:util.c util.h 
-	cc -g -c util.c -pthread
-parms.o:parms.c info.h
-	cc  -g -c  parms.c -pthread
-#init.o:init.c  init.h
-#	cc -g -c  init.c -pthread
-rd_wr.o:rd_wr.c rd_wr.h
-	cc  -g  -c rd_wr.c -pthread
-
-nvr.h: nvr.x
-	rpcgen nvr.x
-
-
-
-.PHONY:clean clean_nvr clean_nvrd install
+.PHONY:clean clean_nvrd install
 
 install: 
 	@echo nothing to install
 
 clean:
-	-rm *.o ${PROGS}
-	
-clean_nvr:
-	-rm ${NVR_OBJ} nvr
-	
+	-rm -f *.o ${PROGS}
+	-rm -f *.out
+	-rm -f tags
+
 clean_nvrd:
-	-rm ${NVRD_OBJ} nvrd
+	-rm ${NVRD_OBJ} ${PROGS}
 
 

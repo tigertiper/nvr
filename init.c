@@ -1,4 +1,7 @@
 #include "init.h"
+#ifdef MEDIATRANSTORE
+#include "MediaTranStore.h"
+#endif
 
 static int logid = LOG_VARLOG;
 static int logmask = 7;
@@ -560,6 +563,16 @@ void firstinit(int argc, char **argv)
 		exit(1);
 	} 
 #endif
+
+#ifdef MEDIATRANSTORE
+	pthread_t pid_store;
+	if (pthread_create(&pid_store, NULL, MediaStoreThread, NULL) != 0) {
+		fprintf(stderr, "Create store_thread failure.\n");
+		syslog(LOG_INFO,"Create store_thread Thread failure!*exit*");
+		exit(1);
+	}
+#endif
+
     /* set some signal handling */
     struct sigaction act;
     act.sa_handler = sigpipeHandler;

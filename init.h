@@ -33,12 +33,16 @@
 #define OPEN_MAX 256
 #define LOCKFILE "/var/run/nvrd.pid"
 #define LOCKMODE (S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)
-#define VERDATA "2013.05.21"
+#define VERDATA "2013.05.23"
 #define NVRDVER "1.165"
-#ifdef SPACE_TIME_SYNCHRONIZATION
+#ifdef JYJ
 #define PRJNAME "JYJ"
-#else
+#endif
+#ifdef TAM
 #define PRJNAME "TAM"
+#endif
+#ifdef NAR
+#define PRJNAME "NAR"
 #endif
 #define R_UNLIMITED	(~0UL)
 
