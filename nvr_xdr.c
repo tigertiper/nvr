@@ -11,8 +11,6 @@
 bool_t
 xdr_LOGINargs(XDR * xdrs, LOGINargs * objp)
 {
-	register int32_t *buf;
-
 	if (!xdr_string(xdrs, &objp->ip, CMN_LEN))
 		return FALSE;
 	if (!xdr_int(xdrs, &objp->port))
@@ -94,8 +92,6 @@ xdr_CMMNargs(XDR * xdrs, CMMNargs * objp)
 bool_t
 xdr_READargs(XDR * xdrs, READargs * objp)
 {
-	register int32_t *buf;
-
 	if (!xdr_u_int(xdrs, &objp->playHandle))
 		return FALSE;
 	if (!xdr_u_int(xdrs, &objp->readSize))
@@ -108,8 +104,6 @@ xdr_READargs(XDR * xdrs, READargs * objp)
 bool_t
 xdr_SEARCHargs(XDR * xdrs, SEARCHargs * objp)
 {
-	register int32_t *buf;
-
 	if (!xdr_CMMNargs(xdrs, objp))
 		return FALSE;
 	return TRUE;
@@ -118,8 +112,6 @@ xdr_SEARCHargs(XDR * xdrs, SEARCHargs * objp)
 bool_t
 xdr_READres(XDR * xdrs, READres * objp)
 {
-	register int32_t *buf;
-
 	if (!xdr_u_int(xdrs, &objp->dataLen))
 		return FALSE;
 	if (!xdr_bytes(xdrs, (char **)&objp->data.data_val, (u_int *) & objp->data.data_len, ~0))
@@ -191,8 +183,6 @@ xdr_HEADERinfo(XDR * xdrs, HEADERinfo * objp)
 bool_t
 xdr_SEARCHres(XDR * xdrs, SEARCHres * objp)
 {
-	register int32_t *buf;
-
 	if (!xdr_CMMNargs(xdrs, &objp->cmmnArgs))
 		return FALSE;
 	if (!xdr_string(xdrs, &objp->describe, describeLEN))
@@ -207,8 +197,6 @@ xdr_SEARCHres(XDR * xdrs, SEARCHres * objp)
 bool_t
 xdr_CREATEargs(XDR * xdrs, CREATEargs * objp)
 {
-	register int32_t *buf;
-
 	if (!xdr_u_int(xdrs, &objp->loginID))
 		return FALSE;
 	if (!xdr_string(xdrs, &objp->camerID, camerIDLEN))
@@ -229,8 +217,6 @@ xdr_CREATEargs(XDR * xdrs, CREATEargs * objp)
 bool_t
 xdr_WRITEargs(XDR * xdrs, WRITEargs * objp)
 {
-	register int32_t *buf;
-
 	if (!xdr_u_int(xdrs, &objp->recordHandle))
 		return FALSE;
 	if (!xdr_u_int(xdrs, &objp->beginTime))
@@ -243,8 +229,6 @@ xdr_WRITEargs(XDR * xdrs, WRITEargs * objp)
 bool_t
 xdr_DELargs(XDR * xdrs, DELargs * objp)
 {
-	register int32_t *buf;
-
 	if (!xdr_CMMNargs(xdrs, objp))
 		return FALSE;
 	return TRUE;
@@ -348,8 +332,6 @@ xdr_VOLUMinfo(XDR * xdrs, VOLUMinfo * objp)
 bool_t
 xdr_SETRECINFOargs(XDR * xdrs, SETRECINFOargs * objp)
 {
-	register int32_t *buf;
-
 	if (!xdr_SEARCHres(xdrs, objp))
 		return FALSE;
 	return TRUE;
@@ -358,8 +340,6 @@ xdr_SETRECINFOargs(XDR * xdrs, SETRECINFOargs * objp)
 bool_t
 xdr_GETRECSIZEargs(XDR * xdrs, GETRECSIZEargs * objp)
 {
-	register int32_t *buf;
-
 	if (!xdr_string(xdrs, &objp->camerID, camerIDLEN))
 		return FALSE;
 	if (!xdr_u_int(xdrs, &objp->beginTime))
@@ -372,8 +352,6 @@ xdr_GETRECSIZEargs(XDR * xdrs, GETRECSIZEargs * objp)
 bool_t
 xdr_CREATRECVOLargs(XDR * xdrs, CREATRECVOLargs * objp)
 {
-	register int32_t *buf;
-
 	if (!xdr_string(xdrs, &objp->volumeid, ~0))
 		return FALSE;
 	if (!xdr_string(xdrs, &objp->name, ~0))
@@ -396,8 +374,6 @@ xdr_CREATRECVOLargs(XDR * xdrs, CREATRECVOLargs * objp)
 bool_t
 xdr_DELRECVOLargs(XDR * xdrs, DELRECVOLargs * objp)
 {
-	register int32_t *buf;
-
 	if (!xdr_string(xdrs, &objp->cameraID, ~0))
 		return FALSE;
 	if (!xdr_int(xdrs, &objp->mode))
@@ -408,8 +384,6 @@ xdr_DELRECVOLargs(XDR * xdrs, DELRECVOLargs * objp)
 bool_t
 xdr_RECORDBYORDERargs (XDR *xdrs, RECORDBYORDERargs *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_u_int (xdrs, &objp->num))
 		 return FALSE;
 	 if (!xdr_string(xdrs, &objp->camerID, camerIDLEN))
@@ -486,8 +460,6 @@ xdr_RECORDBYORDERres (XDR *xdrs, RECORDBYORDERres *objp)
 bool_t
 xdr_DELVEDVOLargs(XDR * xdrs, DELVEDVOLargs * objp)
 {
-	register int32_t *buf;
-
 	if (!xdr_string(xdrs, &objp->volname, ~0))
 		return FALSE;
 	if (!xdr_int(xdrs, &objp->mode))

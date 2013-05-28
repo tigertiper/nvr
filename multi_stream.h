@@ -113,8 +113,6 @@ extern int initDownloadInfo(unsigned int dhandle);
 extern int findDownloadInfo(unsigned int dhandle);
 extern void releaseDownloadInfo(DownloadInfo ** di); 
 int writeToBuf(StreamInfo * si, char *data, int dataLen);
-int write_data(_sbinfo, vnode *, _vnodeInfo, char *, unsigned int,
-		StreamInfo *);
 void *writeThread(void *arg); 
 
 #endif				/*  */

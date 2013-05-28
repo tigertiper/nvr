@@ -1,14 +1,12 @@
-#nvr
-
-#CC = g++
 CC = gcc
 
 PROGS = nvrd
 
 NVRD_OBJ = rd_wr.o bitops_add.o util.o parms.o \
-		   nvr_svc.o nvr_sif.o nvr_xdr.o nvr_srp.o multi_stream.o syslog.o init.o
+		   nvr_srp.o multi_stream.o syslog.o init.o
+RPC_OBJ = nvr_svc.o nvr_sif.o nvr_xdr.o		   
 
-#CFLAGS = -Wall -o2
+CFLAGS += -g -Wall -o2
 
 LIBS = -lpthread
 
@@ -40,14 +38,15 @@ endif
 
 all: ${PROGS}
 
-	
-${PROGS}:$(NVRD_OBJ)
-	${CC} -g ${CFLAGS} -o $@ $^ ${LIBS}
+${PROGS}:$(RPC_OBJ) $(NVRD_OBJ)
+	${CC} ${CFLAGS} -o $@ $^ ${LIBS}
 	chmod 755 $@
 
-${NVRD_OBJ}:%.o:%.c
-	${CC} -g ${CFLAGS} -c $< -o $@
-	
+${NVRD_OBJ}:%.o:%.c %.h info.h
+	${CC} ${CFLAGS} -c $< -o $@
+
+${RPC_OBJ}:%.o:%.c nvr.h
+	${CC} -g -o2 -c $< -o $@ 
 
 .PHONY:clean clean_nvrd install
 

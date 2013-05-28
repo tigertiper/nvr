@@ -11,6 +11,7 @@
 #include <memory.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 #include <unistd.h>
 #include "syslog.h" 
 #include "init.h" 

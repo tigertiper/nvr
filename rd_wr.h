@@ -60,17 +60,18 @@ extern unsigned long long get_lv_size(const char *volName);
 int is_vedio_LVM(const char *Volpath, SBlock * sb);
 int get_lv_name(LvInfo * lv_info, int max);
 int CreatRecordSeg(char *cameraid, seginfo * sinfo, char *buf, short size);
-int WriteStream(uint32_t handle, uint32_t startTime, char *buf,
-		unsigned int size);
+int write_back_tnodes(_sbinfo sbinfo, vnode * v, _vnodeInfo vi, StreamInfo * si);
+int initWriteStream(unsigned int handle, vnode ** v, int *ID, _sbinfo * sbinfo, _vnodeInfo * vi);
+int writeTnodeToBuf(StreamInfo * si, uint32_t startTime, int size);
 int ReadStream(uint32_t handle, char *buf, int size, char mode);
 int openRecordSeg(const char *cameraid, int beginTime, int endTime,
 		  int mode);
 uint32_t _GetRecordSegHead(const char *cameraid, uint32_t * pStartTime,
-			   uint32_t * pEndTime, char *buf, int *size);
+			   uint32_t * pEndTime, char *buf, uint32_t *size);
 uint32_t GetRecordInfo(const char *cameraid, uint32_t * pStartTime,
 		       uint32_t * pEndTime, seginfo * si);
 uint32_t GetRecordInfoOnebyOne(const char *cameraid, uint32_t * pStartTime, 
-               uint32_t * pEndTime, seginfo * si, int *n);
+               uint32_t * pEndTime, seginfo * si, uint32_t *n);
 
 int DeleteRecordPara(const char *cameraid, uint32_t beginTime,
 		     uint32_t endTime);
@@ -89,6 +90,7 @@ int get_cameras_from_vol(char cameras[][CNameLength], int *num,
 			 const char *volName);
 long long get_free_vol_size(const char *volName);
 _sbinfo init(const char *volume_path);
+int get_dev_ID(const char *cameraid, _sbinfo * sbinf);
 int creatCameraList();
 void showCameraList();
 int addCameraInfo(const char * cameraID,  const char * volName);

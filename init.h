@@ -33,7 +33,7 @@
 #define OPEN_MAX 256
 #define LOCKFILE "/var/run/nvrd.pid"
 #define LOCKMODE (S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)
-#define VERDATA "2013.05.23"
+#define VERDATA "2013.05.28"
 #define NVRDVER "1.165"
 #ifdef JYJ
 #define PRJNAME "JYJ"
@@ -51,11 +51,7 @@ extern pthread_rwlock_t DInfo_PRW;
 extern pthread_rwlock_t SInfo_PRW;
 char ClientIP[IPLEN];
 unsigned short int ClientPort; 
-static int retcode;
-static READres readres; 
-static HEADERinfo headerInfo; 
-static char readBuf[MAX_READ_SIZE];
-static char headBuf[MAX_HEADER_LENGTH]; 
+
 
 int tcp_create();
 int already_running(void); 

@@ -6,6 +6,9 @@
 #include<fcntl.h>
 #include<sys/stat.h>
 #include"rd_wr.h"
+#include"util.h"
+#include"parms.h"
+#include"bitops_add.h"
 #include"multi_stream.h" 
 #include"syslog.h"
 
@@ -498,7 +501,7 @@ int
 space_enough(_sbinfo sbinfo, vnode * v, int size, int *n)
 #endif
 {
-	int i,m;
+	int i;
 	uint64_t addr1, addr2;
 	for (i = 0; i < MaxchunkCount && v->block[i][0] != CHUNKNULL; i++) {
 		if (i == 0)
@@ -516,6 +519,7 @@ space_enough(_sbinfo sbinfo, vnode * v, int size, int *n)
 				if (i == 0) {
 					v->storeAddr = v->block[i][0] * (sbinfo->_es->blockSize) + DataAddr + DataAddr1; 
 #ifdef SPACE_TIME_SYNCHRONIZATION
+					int m;
                     if(v->SpaceState == 0) {
                         if (v->isRecycle == NOTRecycled)  {
                             for(m = 0; _TLEN(v)*m < _MinFirstEraseTnodeNum; m++); 
@@ -690,39 +694,6 @@ writeTnodeToBuf(StreamInfo * si, uint32_t startTime, int size)
 }
 
 int
-write_data(_sbinfo sbinfo, vnode * v, _vnodeInfo vi, char *buf, unsigned int _size, StreamInfo * si)
-{
-	int n;
-	uint32_t size;
-	uint64_t addr;
-	// _vnodeInfo vi;
-/*
-      if(size<_size){
-         if(n==0) 
-               addr=v->block[n][0]*(sbinfo->_es->blockSize)+DataAddr+DataAddr1;
-              else addr=v->block[n][0]*(sbinfo->_es->blockSize)+DataAddr;
-          if(writeToBuf(si,(char *)buf,size,v->storeAddr)<0){
-                    ErrorFlag=WRITE_LVM_ERR;
-                       return -1;
-                                         }
-               //if(_write(fd,((char *)buf+size),_size-size,addr)<0){
-          	  	  if(writeToBuf(si,((char *)buf+size),_size-size,addr) < 0){
-                    ErrorFlag=WRITE_LVM_ERR;
-                       return -1;
-                                         }    
-       v->storeAddr=addr+_size-size;
-                      }*/
-
-	if (writeToBuf(si, buf, _size) < 0) {
-		ErrorFlag = WRITE_LVM_ERR;
-		return -1;
-	}
-	v->storeAddr += _size;
-
-	return 0;
-}
-
-int
 initWriteStream(unsigned int handle, vnode ** v, int *ID, _sbinfo * sbinfo, _vnodeInfo * vi)
 {
 	if (handle == -1) {
@@ -737,10 +708,11 @@ initWriteStream(unsigned int handle, vnode ** v, int *ID, _sbinfo * sbinfo, _vno
 	}
 	(*v) = (vnode *) ((*sbinfo)->vnodeTable + (*ID) * sizeof(vnode));
 // snode not set startTime
-	if (((*vi) = get_Vi(*v, handle & 0x0000FF)) == NULL) {
+	if (((*vi) = (_vnodeInfo)get_Vi(*v, handle & 0x0000FF)) == NULL) {
 		ErrorFlag = ERR_HANDLE;
 		return -1;
 	}
+	return 0;
 }
 
 /*
@@ -805,7 +777,7 @@ find_snode(_sbinfo sbinfo, vnode * v, int fd, char *_buf, uint32_t startTime, ui
 				si = (segindex *) (_buf + ((1 + h) % 1024) * SEG_SIZE);
 				if (si->start_time == 0) {
 					m--;
-					h = (++h) % 1024;
+					h = (1 + h) % 1024;
 					continue;
 				}
 				if (si->start_time > t && si->start_time <= endTime)
@@ -890,7 +862,7 @@ read_tnode(unsigned int timeBegin, _vnodeInfo vi, vnode * v, long long addr, uns
 		j = end / Tnode_SIZE;
 		if (j < TimeBuffSize)
 			vi->t[j].time = 0;	//表示该tnode无用
-		if (mode && !flag && (v->count == 2 || v->count == 1 && addr1 < v->queryAdd)
+		if (mode && !flag && (v->count == 2 || (v->count == 1 && addr1 < v->queryAdd))
 		    && vi->t[TimeBuffSize - 1].time < timeBegin)
 			addr = addr1;
 		else
@@ -958,7 +930,7 @@ getVnodeInfo(int handle)
 		goto err;
 	}
 	v = (vnode *) (sbinfo->vnodeTable + ID * sizeof(vnode));
-	return get_Vi(v, (handle & 0x000000FF));
+	return (_vnodeInfo)get_Vi(v, (handle & 0x000000FF));
       err:
 	return NULL;
 }
@@ -1313,7 +1285,7 @@ CloseRecordSeg(uint32_t handle, StreamInfo * si)
 	sbinfo = SBINFO(handle);
 	ID = _ID(handle);
 	v = (vnode *) (sbinfo->vnodeTable + ID * sizeof(vnode));
-	if (!(vi = get_Vi(v, handle & 0x0000FF))) {
+	if (!(vi = (_vnodeInfo)get_Vi(v, handle & 0x0000FF))) {
 		ErrorFlag = ERR_HANDLE;
 		return -1;
 	}
@@ -1356,7 +1328,7 @@ CloseRecordSeg(uint32_t handle, StreamInfo * si)
         要求buf的容量大于等于10K
       */
 uint32_t
-_GetRecordSegHead(const char *cameraid, uint32_t * pStartTime, uint32_t * pEndTime, char *buf, int *size)
+_GetRecordSegHead(const char *cameraid, uint32_t * pStartTime, uint32_t * pEndTime, char *buf, uint32_t *size)
 {
 	int ID, n, fd;
 	vnode *v;
@@ -1436,7 +1408,7 @@ DeleteRecordPara(const char *cameraid, uint32_t beginTime, uint32_t endTime)
 		return -1;
 	ID = _ID(handle);
 	v = (vnode *) (sbinfo->vnodeTable + ID * sizeof(vnode));
-	if (!(vi = alloc_vi(sbinfo))) {
+	if (!(vi = (_vnodeInfo)alloc_vi(sbinfo))) {
 		return -1;
 	}
 	pthread_mutex_lock(&sbinfo->mutex);
@@ -1621,7 +1593,7 @@ GetRecordInfo(const char *cameraid, uint32_t * pStartTime, uint32_t * pEndTime, 
 }
 
 uint32_t
-GetRecordInfoOnebyOne(const char *cameraid, uint32_t * pStartTime, uint32_t * pEndTime, seginfo * si, int *n)
+GetRecordInfoOnebyOne(const char *cameraid, uint32_t * pStartTime, uint32_t * pEndTime, seginfo * si, uint32_t *n)
 {
 	int ID, fd,len,m;
 	vnode *v;
@@ -1712,7 +1684,7 @@ GetRecordSegSize(const char *cameraid, uint32_t StartTime, uint32_t EndTime)
 		return -1;
 	ID = _ID(handle);
 	v = (vnode *) (sbinfo->vnodeTable + ID * sizeof(vnode));
-	if (!(vi = alloc_vi(sbinfo))) {
+	if (!(vi = (_vnodeInfo)alloc_vi(sbinfo))) {
 		return -1;
 	}
 	pthread_mutex_lock(&sbinfo->mutex);
@@ -1754,9 +1726,9 @@ GetRecordSegSize(const char *cameraid, uint32_t StartTime, uint32_t EndTime)
 		goto err1;
 	}
 #ifdef SPACE_TIME_SYNCHRONIZATION
-    if (j > h && v->SpaceState != 0 || (j == h && v->SpaceState != 0  && addr3 >= addr4))
+    if ( (j > h && v->SpaceState != 0) || (j == h && v->SpaceState != 0  && addr3 >= addr4))
 #else
-	if (j > h && v->isRecycle == ISRecycled || (j == h && v->isRecycle == ISRecycled && addr3 >= addr4))
+	if ( (j > h && v->isRecycle == ISRecycled) || (j == h && v->isRecycle == ISRecycled && addr3 >= addr4))
 #endif        
 		count = h + i - j;
 	else
@@ -1785,7 +1757,7 @@ GetRecordSegSize(const char *cameraid, uint32_t StartTime, uint32_t EndTime)
 				size += addr4 - addr1;
 			else
 				size += addr2 - addr3;
-			k = (++k) % i;
+			k = (1 + k) % i;
 			if (k == 0)
 				addr3 = v->block[k][0] * (sbinfo->_es->blockSize) + DataAddr + DataAddr1;
 			else
@@ -1871,14 +1843,10 @@ fill_vnode(_sbinfo sbinfo, vnode * v, int ID, char *volumeid, char *name, char *
 int
 alloc_ID(const char *vol_path, const char *cameraid, _sbinfo * sbinf, int *ID)
 {
-	int m, n;
+	int m;
 	int flag = 0, count = 0;
 	int handle = 0;
 	_sbinfo sbinfo = NULL;
-	char *vbitmap;
-	int fd;
-	char buf[Vnode_SIZE];
-	vnode *v;
 	if (read_vol_by_camera(NULL, cameraid) == 0) {
 		ErrorFlag = EXIST_SAME_NAME;
 		return -1;
@@ -1914,6 +1882,60 @@ alloc_ID(const char *vol_path, const char *cameraid, _sbinfo * sbinf, int *ID)
 	}
 	*sbinf = sbinfo;
 	return flag;
+}
+
+
+int
+get_dev_ID(const char *cameraid, _sbinfo * sbinf)
+{
+	int m, n;
+	int flag = 0, count = 0;
+	int handle = 0;
+	_sbinfo sbinfo = NULL;
+	char vol_path[VolNameLength];
+	if (read_vol_by_camera(vol_path, cameraid) < 0) {
+		//ErrorFlag = NOT_EXIST_RECORD;
+		return -1;
+	}
+	if (!spin_rdlock(sbTable.spin)) {
+		for (handle = 0; handle < LvmCount; handle++) {
+			sbinfo = sbTable.table[handle];
+			if (sbinfo && (strcmp(sbinfo->volName, vol_path) == 0))
+				break;
+		}
+		spin_rwunlock(sbTable.spin);
+	}
+	if (handle >= LvmCount) {
+		sbinfo = (_sbinfo) init(vol_path);
+		if (!sbinfo)
+			return -1;
+		for (handle = 0; handle < LvmCount; handle++)
+			if (sbinfo == sbTable.table[handle])
+				break;
+	}
+	n = buf_hash((char *)cameraid, strlen(cameraid));
+	count = 0;
+	m = n;
+	while (count < MaxUsers && m < MaxUsers) {
+		if (bit(sbinfo->vnodemapping, m)) {
+			if (strcmp(((vnode *) ((char *)sbinfo->vnodeTable + m * sizeof(vnode)))->cameraid, cameraid) == 0) {
+				flag = 1;
+				m = m << 16 & 0xFFFF0000;
+				break;
+			} 
+		} 
+		m = (m + 1) % MaxUsers;
+		count++;
+	}
+	if (flag == 0) {
+		ErrorFlag = NOT_EXIST_RECORD;
+		return -1;
+	}
+	if (sbinf)
+		*sbinf = sbinfo;
+	handle = handle << 8 & 0x0000FF00;
+	handle = handle | m;
+	return handle;
 }
 
 int get_cameras_from_vol(char cameras[][CNameLength], int *num,
@@ -2214,7 +2236,6 @@ int removeCameraInfo(const char *cameraID)
     }
     CameraInfo* preCameraInfo = CameraInfos;
     CameraInfo* pCameraInfo = CameraInfos->next;
-    CameraInfo* pTemp = NULL;
     while(pCameraInfo)
     {
         if(!strcmp(pCameraInfo->CameraID, cameraID))
@@ -2244,7 +2265,6 @@ int removeCameraInfoByVol(const char *vol_path)
     }
     CameraInfo* preCameraInfo = CameraInfos;
     CameraInfo* pCameraInfo = CameraInfos->next;
-    CameraInfo* pTemp = NULL;
     while(pCameraInfo)
     {
         if(!strcmp(pCameraInfo->lv_name, vol_path))

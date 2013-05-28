@@ -1,4 +1,7 @@
 #include "init.h"
+#include "rd_wr.h"
+#include "parms.h"
+#include "nvr_srp.h"
 #ifdef MEDIATRANSTORE
 #include "MediaTranStore.h"
 #endif
@@ -238,9 +241,8 @@ void *SerialRecordThread(void* arg)
 {
     syslog(LOG_INFO,  "start record thread.");
 
-    int i, maxi, listenfd, connfd, sockfd;
+    int i, maxi, listenfd, connfd;
     int nready;
-    ssize_t n; 
     socklen_t clilen;
     struct pollfd client[OPEN_MAX];
     struct sockaddr_in cliaddr;
@@ -505,7 +507,7 @@ sigpipeHandler(int sig)
  
 void firstinit(int argc, char **argv)
 {
-	pthread_t pid, pid1,pid2,pid3; 
+	pthread_t pid, pid1,pid2; 
     int listenfd; 
     get_opt(argc, argv); 
 	openlog(argv[0], LOG_CONS | LOG_PID, logid); 
@@ -558,6 +560,7 @@ void firstinit(int argc, char **argv)
 #endif 
 
 #ifdef UPDATE
+	pthread_t pid3;
 	if (pthread_create(&pid3, NULL, UpdateThread, NULL) != 0) { 
 		syslog(LOG_ERR,"Create UpdateThread failure!*exit*");
 		exit(1);

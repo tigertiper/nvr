@@ -12,9 +12,10 @@
 #include <time.h>
 #include <sys/time.h>
 #include "nvr.h"
-#include "Debug.h"
+#include "syslog.h"
 #include "rd_wr.h"
 #include "multi_stream.h"
+#include "nvr_srp.h"
  
 unsigned int NAR_startRecord(char *camerID, char *camerName,int recordType,
                  int recVlmID, char *header,unsigned int headLen, char *desc, int descLen)
@@ -92,10 +93,10 @@ void* MediaStoreThread(void *arg)
             //read conf file 
             syslog(LOG_INFO, "open camera.conf...!\n");
             if((fp = fopen(CAMERA_CONF, "r"))<=0){
-                syslog(LOG_INFO, "open camera.conf error! \n",fp);
-                return;
+                syslog(LOG_INFO, "open camera.conf error!\n");
+                return NULL;
             }
-            syslog(LOG_INFO, "open camera.conf success! \n",fp);
+            syslog(LOG_INFO, "open camera.conf success!\n");
             for(i=0;i<MAX_IPC_NUMS;i++){ 
                 memset(LineString, 0, MAX_LINE_LEN); 
                 strcpy(cameraType, "N/A");
@@ -121,7 +122,7 @@ void* MediaStoreThread(void *arg)
             fclose(fp); 
             
             for(i=0;i<linesnum;i++){
-                     printf("cameraType:%d cameraID:%s cameraIP:%s cameraPort:%d\n",paras[i].cameraType,paras[i].cameraID,paras[i].cameraIP,paras[i].cameraPort);
+                     syslog(LOG_ERR,"cameraType:%d cameraID:%s cameraIP:%s cameraPort:%d\n",paras[i].cameraType,paras[i].cameraID,paras[i].cameraIP,paras[i].cameraPort);
                      switch(paras[i].cameraType){
                          case 1: //706camera
                              pthread_create(&id[i], NULL, Aero_Store_Thread, (void *)&paras[i]);
@@ -154,58 +155,58 @@ void *Aero_Store_Thread(void *arg)
         sockfd=IPC_AddMediaSource(recordpara->cameraIP,recordpara->cameraPort,1,1,3);  //连接摄像头
         if(sockfd<0)
         {
-            printf("connect Aero IPC %s error!\n", recordpara->cameraIP);
+            syslog(LOG_ERR,"connect Aero IPC %s error!\n", recordpara->cameraIP);
             continue;
         }
         else
         {
-            printf("connect Aero IPC %s sucess!\n", recordpara->cameraIP);
+            syslog(LOG_ERR,"connect Aero IPC %s sucess!\n", recordpara->cameraIP);
         }
         
         if(IPC_StartTransmit(sockfd)<0)     //摄像头开始传输
         {
-            printf("Aero IPC %s StartTransmit error!\n", recordpara->cameraIP);
+            syslog(LOG_ERR,"Aero IPC %s StartTransmit error!\n", recordpara->cameraIP);
             if(IPC_RemoveMediaSource(sockfd)<0)  //移除流媒体
             {
-                printf("disconnect Aero IPC %s error!\n", recordpara->cameraIP);
+                syslog(LOG_ERR,"disconnect Aero IPC %s error!\n", recordpara->cameraIP);
             }
             else
             {
-                //printf("disconnect IPC %s success!\n", recordpara->cameraIP);
+                //syslog(LOG_ERR,"disconnect IPC %s success!\n", recordpara->cameraIP);
             }
             continue;
         }
         else
         {
-           printf("Aero IPC %s StartTransmit sucess!\n", recordpara->cameraIP);
+           syslog(LOG_ERR,"Aero IPC %s StartTransmit sucess!\n", recordpara->cameraIP);
         }
         
         recordhandle = NAR_startRecord( recordpara->cameraID, recordpara->cameraID,recordpara->cameraType, recVlmID,data,headLen , recordpara->cameraID, strlen(recordpara->cameraID));
         if(recordhandle < 0)
         {
-            printf("Aero IPC %s start record in %s failed! errorCode:%lu\n",recordpara->cameraIP, recordpara->cameraID, nvrproc_getlasterror());
+            syslog(LOG_ERR,"Aero IPC %s start record in %s failed! errorCode:%lu\n",recordpara->cameraIP, recordpara->cameraID, nvrproc_getlasterror());
              
             if(IPC_StopTransmit(sockfd)<0)//停止传输
             {
-                printf("Aero IPC %s StopTransmit error!\n", recordpara->cameraIP);
+                syslog(LOG_ERR,"Aero IPC %s StopTransmit error!\n", recordpara->cameraIP);
             }
             else
             {
-                //printf("Aero IPC %s StopTransmit success!\n", recordpara->cameraIP);
+                //syslog(LOG_ERR,"Aero IPC %s StopTransmit success!\n", recordpara->cameraIP);
             }
             if(IPC_RemoveMediaSource(sockfd)<0)  //移除流媒体
             {
-                printf("disconnect Aero IPC %s error!\n", recordpara->cameraIP);
+                syslog(LOG_ERR,"disconnect Aero IPC %s error!\n", recordpara->cameraIP);
             }
             else
             {
-                //printf("disconnect Aero IPC %s success!\n", recordpara->cameraIP);
+                //syslog(LOG_ERR,"disconnect Aero IPC %s success!\n", recordpara->cameraIP);
             }
             continue;
         }
         else
         {
-            printf("Aero IPC %s start record in %s success!\n", recordpara->cameraIP, recordpara->cameraID);
+            syslog(LOG_ERR,"Aero IPC %s start record in %s success!\n", recordpara->cameraIP, recordpara->cameraID);
         }
 
         void* cbArgs = (void*) recordhandle;
@@ -213,67 +214,67 @@ void *Aero_Store_Thread(void *arg)
         //starRecord
         if(IPC_SetGetDataCB(sockfd, &Aero_Store_CallBack, cbArgs)<0) //设置流回调函数
         {
-            printf("Aero IPC %s SetGetDataCB error!\n", recordpara->cameraIP);
+            syslog(LOG_ERR,"Aero IPC %s SetGetDataCB error!\n", recordpara->cameraIP);
             if(NAR_stopRecord(recordhandle)<0)
             {
-                printf("Aero IPC %s stop Record in %s error! errorCode:%lu\n", recordpara->cameraIP, recordpara->cameraID, nvrproc_getlasterror());
+                syslog(LOG_ERR,"Aero IPC %s stop Record in %s error! errorCode:%lu\n", recordpara->cameraIP, recordpara->cameraID, nvrproc_getlasterror());
             }
             else
             {
-                //printf("Aero IPC %s stop Record in %s success!\n", recordpara->cameraIP, recordpara->cameraID);
+                //syslog(LOG_ERR,"Aero IPC %s stop Record in %s success!\n", recordpara->cameraIP, recordpara->cameraID);
             }
             if(IPC_StopTransmit(sockfd)<0)//停止传输
             {
-                printf("Aero IPC %s StopTransmit error!\n", recordpara->cameraIP);
+                syslog(LOG_ERR,"Aero IPC %s StopTransmit error!\n", recordpara->cameraIP);
             }
             else
             {
-                //printf("Aero IPC %s StopTransmit success!\n", recordpara->cameraIP);
+                //syslog(LOG_ERR,"Aero IPC %s StopTransmit success!\n", recordpara->cameraIP);
             }
             if(IPC_RemoveMediaSource(sockfd)<0)  //移除流媒体
             {
-                printf("disconnect Aero IPC %s error!\n", recordpara->cameraIP);
+                syslog(LOG_ERR,"disconnect Aero IPC %s error!\n", recordpara->cameraIP);
             }
             else
             {
-                //printf("disconnect Aero IPC %s success!\n", recordpara->cameraIP);
+                //syslog(LOG_ERR,"disconnect Aero IPC %s success!\n", recordpara->cameraIP);
             }
             continue;
         }
         else
         {
-            //printf("Aero IPC %s SetGetDataCB success!\n",recordpara->cameraIP);
+            //syslog(LOG_ERR,"Aero IPC %s SetGetDataCB success!\n",recordpara->cameraIP);
         }
          
         if (IPC_SetGetDataCBRun(sockfd, 1)<0) //启动流回调函数线程，开始存储
         {
-            printf("Aero IPC %s GetDataCB Run error!\n",recordpara->cameraIP);
+            syslog(LOG_ERR,"Aero IPC %s GetDataCB Run error!\n",recordpara->cameraIP);
                 //stopRecord
             if(NAR_stopRecord(recordhandle))
             {
-                printf("Aero IPC %s stop Record in %s error!\n", recordpara->cameraIP, recordpara->cameraID);
+                syslog(LOG_ERR,"Aero IPC %s stop Record in %s error!\n", recordpara->cameraIP, recordpara->cameraID);
             }
             else
             {
-                //printf("Aero IPC %s stop Record in %s success!\n", recordpara->cameraIP, recordpara->cameraID);
+                //syslog(LOG_ERR,"Aero IPC %s stop Record in %s success!\n", recordpara->cameraIP, recordpara->cameraID);
             } 
             
             if(IPC_StopTransmit(sockfd)<0)//停止传输
             {
-                printf("Aero IPC %s StopTransmit error!\n", recordpara->cameraIP);
+                syslog(LOG_ERR,"Aero IPC %s StopTransmit error!\n", recordpara->cameraIP);
             }
             else
             {
-                //printf("Aero IPC %s StopTransmit success!\n", recordpara->cameraIP);
+                //syslog(LOG_ERR,"Aero IPC %s StopTransmit success!\n", recordpara->cameraIP);
             }
 
             if(IPC_RemoveMediaSource(sockfd)<0)  //移除流媒体
             {
-                printf("disconnect Aero IPC %s error!\n", recordpara->cameraIP);
+                syslog(LOG_ERR,"disconnect Aero IPC %s error!\n", recordpara->cameraIP);
             }
             else
             {
-               //printf("disconnect IPC %s success!\n", recordpara->cameraIP);
+               //syslog(LOG_ERR,"disconnect IPC %s success!\n", recordpara->cameraIP);
             }
             continue;
         } 
@@ -288,7 +289,7 @@ int Aero_Store_CallBack(void* handle, char *pData, int nSize)
 
      if(NAR_record((unsigned int)handle , pData, nSize, time(NULL), time(NULL))<0)
      {
-        printf("errorCode is %lu\n", nvrproc_getlasterror());
+        syslog(LOG_ERR,"errorCode is %lu\n", nvrproc_getlasterror());
        // pthread_mutex_unlock(&record_lock);
         return -1;
      }
@@ -314,7 +315,6 @@ void * HK_Store_Thread(void * para){
     ClientInfo.lChannel = 1;
     ClientInfo.lLinkMode = 0;
     ClientInfo.sMultiCastIP = NULL;
-    BOOL bPreviewBlock = TRUE;
 
 
     RecordParas *t_para = (RecordParas *)para;
@@ -338,11 +338,11 @@ void * HK_Store_Thread(void * para){
     	//-------------HKLogin
     	lUserID = NET_DVR_Login_V30(t_para->cameraIP, t_para->cameraPort, HK_userName, HK_password, &struDeviceInfo);
     	if(lUserID < 0){
-    	    printf("connect HK IPC %s failed! errorCode: %d\n", t_para->cameraIP, NET_DVR_GetLastError());
+    	    syslog(LOG_ERR,"connect HK IPC %s failed! errorCode: %d\n", t_para->cameraIP, NET_DVR_GetLastError());
     	    NET_DVR_Cleanup();//clear all the info
             continue;
     	}
-        printf("connect HK IPC %s sucess!\n", t_para->cameraIP);
+        syslog(LOG_ERR,"connect HK IPC %s sucess!\n", t_para->cameraIP);
 
 	//set exception callback function
     	NET_DVR_SetExceptionCallBack_V30(0, NULL, HK_RP_Exp_Callback, &hkargs);
@@ -357,14 +357,15 @@ void * HK_Store_Thread(void * para){
     	while(!hkargs.block_flag){ 
     	}
         stopResult = NET_DVR_StopRealPlay(streamHandle);
-        printf("(InHKTransdata) stoped real play ? result:%d\n", stopResult);
+        syslog(LOG_INFO,"(InHKTransdata) stoped real play ? result:%d\n", stopResult);
         NET_DVR_Logout_V30(lUserID);
-        printf("(InHKTransdata) HKcamera Logout(loginID was %d)\n",lUserID);
+        syslog(LOG_INFO,"(InHKTransdata) HKcamera Logout(loginID was %d)\n",lUserID);
         NET_DVR_Cleanup();
         if(hkargs.block_flag == 1){
 			break;
 		}
     }
+	return NULL;
 }
 
 
@@ -372,18 +373,12 @@ void * HK_Store_Thread(void * para){
 void CALLBACK HK_Store_CallBack(LONG streamHandle, DWORD dwDataType, BYTE *pBuffer, DWORD dwBufSize,void* dwUser){ 
     
     //info to login nvrd
-    int serverPort = 100;
-    char serverUserName[] = "admin";
-    char serverPassword[] = "password";
     char server_VolAlias[] = "camera";
     int  server_VolrecordType = 2;
     int  server_recVlmID = 0;
     char server_desc[] = "describe";
     int  server_descLen = strlen(server_desc);
 
-    
-
-    char *buf = (char *)pBuffer;//BYTE is unsigned char type 
     //static unsigned int hres = 0;
     //static unsigned int last_hres = 0;
 
@@ -400,44 +395,44 @@ void CALLBACK HK_Store_CallBack(LONG streamHandle, DWORD dwDataType, BYTE *pBuff
 
     int stopRecord_result;
 
-    //printf("hk_store is running");
+    //syslog(LOG_ERR,"hk_store is running");
     switch(dwDataType){
         case NET_DVR_SYSHEAD:
             if(dwBufSize > 0){
                 pUser->NAR_recordHandle = NAR_startRecord(pUser->NAR_cameraID, server_VolAlias, server_VolrecordType, \
                                       server_recVlmID, (char *)pBuffer, (int)dwBufSize, server_desc, server_descLen);
                 if(pUser->NAR_recordHandle == (unsigned int)(-1)){
-                    printf("(IN hk_store) HK Startrecord fail:errCode:%d\n",nvrproc_getlasterror());
+                    syslog(LOG_ERR,"(IN hk_store) HK Startrecord fail:errCode:%lu\n",nvrproc_getlasterror());
                     pUser->block_flag = 1;
                 }else{
 					; //start succeed
 				}
                     
             }else{
-                printf("(IN hk_store) nodata(head) from HK camera!\n");
+                syslog(LOG_INFO,"(IN hk_store) nodata(head) from HK camera!\n");
 			}
             break;
         case NET_DVR_STREAMDATA://streaming data 
             if(dwBufSize > 0){
                 ret = NAR_record(pUser->NAR_recordHandle, (const char *)pBuffer, (int)dwBufSize, beginTime, endTime);
                 if(ret < 0){
-                    printf("(IN hk_store) HK record fail:errCode:%d\n",nvrproc_getlasterror());
+                    syslog(LOG_INFO,"(IN hk_store) HK record fail:errCode:%lu\n",nvrproc_getlasterror());
                     if(pUser->NAR_recordHandle != (unsigned int)(-1)){
                         stopRecord_result = NAR_stopRecord(pUser->NAR_recordHandle);
-                        printf("(IN hk_store)Now stop the record(Handle %d),stopResult:%d\n",pUser->NAR_recordHandle, stopRecord_result);
+                        syslog(LOG_INFO,"(IN hk_store)Now stop the record(Handle %d),stopResult:%d\n",pUser->NAR_recordHandle, stopRecord_result);
                         pUser->block_flag = 1;
                     }
                 }else{
-                    //printf("data length: %d\n", dwBufSize);
+                    //syslog(LOG_ERR,"data length: %d\n", dwBufSize);
 					//recording
 				}
 			}else{
-                printf("(IN hk_store) nodata from(stream) HK camera!\n");	
+                syslog(LOG_INFO,"(IN hk_store) nodata from(stream) HK camera!\n");	
             }
             break;
     
         default:
-            printf("(IN hk_store) can't identify the data type\n");
+            syslog(LOG_INFO,"(IN hk_store) can't identify the data type\n");
             
     }
 }
@@ -451,25 +446,25 @@ void CALLBACK HK_RP_Exp_Callback(DWORD dwType, LONG lUserID, LONG lHandle, void 
     HKcameraArgs *dwUser = (HKcameraArgs *)pUser;
     switch(dwType){
         case EXCEPTION_RECONNECT:   //need to reconnect?
-            printf("(InHKExpHandle)-------reconnect?-------\n");
+            syslog(LOG_INFO,"(InHKExpHandle)-------reconnect?-------\n");
             
 			if(dwUser->NAR_recordHandle != (unsigned int)(-1)){
-                printf("(InHKExpHandle) ready to stop record!\n");
+                syslog(LOG_INFO,"(InHKExpHandle) ready to stop record!\n");
 				stopRecord_result = NAR_stopRecord(dwUser->NAR_recordHandle);
-                printf("(InHKExpHandle)Now stop the record(Handle %d),stopResult:%d\n",dwUser->NAR_recordHandle, stopRecord_result);
+                syslog(LOG_INFO,"(InHKExpHandle)Now stop the record(Handle %d),stopResult:%d\n",dwUser->NAR_recordHandle, stopRecord_result);
             }
-            printf("(InHKExpHandle) ready to change the value of block_flag\n");
+            syslog(LOG_INFO,"(InHKExpHandle) ready to change the value of block_flag\n");
 			dwUser->block_flag = 2;
             break;
         default:
-            printf("(InHKExpHandle)---don't know how to handle with this issue---\n");
+            syslog(LOG_INFO,"(InHKExpHandle)---don't know how to handle with this issue---\n");
             
             if(dwUser->NAR_recordHandle != (unsigned int)(-1)){
-                printf("(InHKExpHandle) ready to stop record!\n");
+                syslog(LOG_INFO,"(InHKExpHandle) ready to stop record!\n");
 				stopRecord_result = NAR_stopRecord(dwUser->NAR_recordHandle);
-                printf("(InHKExpHandle)Now stop the record(Handle %d),stopResult:%d\n",dwUser->NAR_recordHandle, stopRecord_result);
+                syslog(LOG_INFO,"(InHKExpHandle)Now stop the record(Handle %d),stopResult:%d\n",dwUser->NAR_recordHandle, stopRecord_result);
             }
-            printf("(InHKExpHandle) ready to change the value of block_flag\n");
+            syslog(LOG_INFO,"(InHKExpHandle) ready to change the value of block_flag\n");
 			dwUser->block_flag = 2;
             break;
     }

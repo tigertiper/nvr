@@ -462,6 +462,7 @@ void *GetDataCB_Thread(void *arg)
             break;
         }      
 	}
+	return NULL;
 }
 
 /*启动流回调函数线程*/

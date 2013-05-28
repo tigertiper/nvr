@@ -14,6 +14,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <unistd.h>
  
 #define FINC_SLASH	'/'
 #define PATH_MAX	512

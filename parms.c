@@ -1,11 +1,3 @@
-#include<string.h>
-#include<unistd.h>
-#include<fcntl.h>
-#include<pthread.h>
-#include<time.h>
-#include<sys/stat.h>
-#include"info.h"
-
 #ifndef _LARGEFILE_SOURCE
 #define _LARGEFILE_SOURCE
 #endif
@@ -13,6 +5,19 @@
 #ifndef _LARGEFILE64_SOURCE
 #define _LARGEFILE64_SOURCE
 #endif
+
+#include<string.h>
+#include<unistd.h>
+#include<fcntl.h>
+#include<stdlib.h>
+#include<pthread.h>
+#include<time.h>
+#include<sys/types.h>
+#include<sys/stat.h>
+#include"info.h"
+#include"util.h"
+#include"bitops_add.h"
+
 
 #define _FILE_OFFSET_BITS 64
 
@@ -570,64 +575,4 @@ delete_vi(_sbinfo sbinfo, vnode * v, char mode, int key)
 // v->status--;
 	return (((char *)vi) - (char *)sbinfo->_bf) / sizeof(struct vnodeInfo);
 }
-
-int
-get_dev_ID(const char *cameraid, _sbinfo * sbinf)
-{
-	int m, n;
-	int flag = 0, count = 0;
-	int handle = 0;
-	_sbinfo sbinfo = NULL;
-	char *vbitmap;
-	int fd;
-	char buf[Vnode_SIZE];
-	vnode *v;
-	char vol_path[VolNameLength];
-	if (read_vol_by_camera(vol_path, cameraid) < 0) {
-		//ErrorFlag = NOT_EXIST_RECORD;
-		return -1;
-	}
-	if (!spin_rdlock(sbTable.spin)) {
-		for (handle = 0; handle < LvmCount; handle++) {
-			sbinfo = sbTable.table[handle];
-			if (sbinfo && (strcmp(sbinfo->volName, vol_path) == 0))
-				break;
-		}
-		spin_rwunlock(sbTable.spin);
-	}
-	if (handle >= LvmCount) {
-		sbinfo = (_sbinfo) init(vol_path);
-		if (!sbinfo)
-			return -1;
-		for (handle = 0; handle < LvmCount; handle++)
-			if (sbinfo == sbTable.table[handle])
-				break;
-	}
-	n = buf_hash((char *)cameraid, strlen(cameraid));
-	count = 0;
-	m = n;
-	while (count < MaxUsers && m < MaxUsers) {
-		if (bit(sbinfo->vnodemapping, m)) {
-			if (strcmp(((vnode *) ((char *)sbinfo->vnodeTable + m * sizeof(vnode)))->cameraid, cameraid) == 0) {
-				flag = 1;
-				m = m << 16 & 0xFFFF0000;
-				break;
-			} 
-		} 
-		m = (m + 1) % MaxUsers;
-		count++;
-	}
-	if (flag == 0) {
-		ErrorFlag = NOT_EXIST_RECORD;
-		return -1;
-	}
-	if (sbinf)
-		*sbinf = sbinfo;
-	handle = handle << 8 & 0x0000FF00;
-	handle = handle | m;
-	return handle;
-}
-
-
-
 

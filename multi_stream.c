@@ -3,9 +3,8 @@
 #include <unistd.h>
 #include <string.h>
 #include <pthread.h>
-
-#include "Debug.h"
 #include "multi_stream.h"
+#include "rd_wr.h"
 pthread_rwlock_t SInfo_PRW = PTHREAD_RWLOCK_INITIALIZER;
 pthread_rwlock_t DInfo_PRW = PTHREAD_RWLOCK_INITIALIZER;
 unsigned int loginList[MAX_LOGINS] = { 0 };

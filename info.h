@@ -18,6 +18,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+
 //#include"util.h"
 #define MaxBlocks (1024*1024/8)
 #define MaxUsers  1024
@@ -245,65 +246,7 @@ typedef struct DataSegInfo {
 
 extern SBTable sbTable;
 
-void sb_to_buf(char *buf, SBlock * sb);
-void buf_to_sb(char *buf, SBlock * sb);
-void vnode_to_buf(char *buf, vnode * v);
-void buf_to_vnode(char *buf, vnode * v);
-void DSI_to_buf(char *buf, seginfo * seg);
-void buf_to_DSI(char *buf, seginfo * seg);
-int set_clr_bitmap(_sbinfo sbinfo, vnode * v, int flag);
-int free_blocks(_sbinfo sbinfo, vnode * v, int time);
-int put_sb(_sbinfo sbinfo, vnode * v);
-char *extend_buf(vnode * v, _sbinfo sbinfo, char mode);
-int test_or_alloc_ID(_sbinfo sbinfo, char *name, int len, int *n,
-		     int flag);
-int cal_alloc_chunk(_sbinfo sbinfo, vnode * v, unsigned long long  blocks);
-_sbinfo get_sbinfo(const char *volumeid);
-_vnodeInfo get_Vi(vnode * v, int key);
-int delete_vi(_sbinfo sbinfo, vnode * v, char mode, int key);
-int free_vi(_sbinfo sbinfo, int nr);
-//int read_vol_by_camera(char *vol_path, const char *cameraid);
-//int write_parm_file(const char *vol_path, const char *cameraid);
-
-_vnodeInfo alloc_vi(_sbinfo sbinfo);
-
-extern int put_vnode(_sbinfo sbinfo, vnode * v, char *_vbitmap, int ID);
-
-/*Bitops_add.c*/
-extern /*inline */ int bit(char *addr, int nr);
-extern /*inline */ int setbit_(char *addr, int nr);
-extern /*inline */ int clrbit_(char *addr, int nr);
-extern /*inline */ int find_first_zero(char *addr, int nr);
-
-/*util.c*/
-/*
-extern  int spin_init(pthread_mutex_t spinlock);
-extern  int spin_lock(pthread_mutex_t spinlock);
-extern  int spin_trylock(pthread_mutex_t spinlock);
-extern  int spin_unlock(pthread_mutex_t spinlock);
-extern  int spin_destroy(pthread_mutex_t spinlock);
-extern  int spin_rwinit(pthread_rwlock_t spinlock);
-extern int spin_rdlock(pthread_rwlock_t spinlock);
-extern  int spin_wrlock(pthread_rwlock_t spinlock);
-extern  int spin_rwunlock(pthread_rwlock_t spinlock);
-extern / int spin_trywrlock(pthread_rwlock_t spinlock);
-extern  int spin_rwdestroy(pthread_rwlock_t spinlock);
-extern int spin_tryrdlock(pthread_rwlock_t spinlock);
-*/
-
-
 extern unsigned int ErrorFlag;
-extern int buf_hash(char *name, int len);
-extern void _Debug(char *s, int line, char *file);
-extern int _read(int fd, char *buf, int size, long long offset);
-extern int _write(int fd, char *buf, int size, long long offset);
 
-/**init.c*/
-
-extern unsigned long long InitFalg;
-extern int free_vnode(_sbinfo sbinfo, vnode * v);
-
-
-/*getsize.c*/
 
 #endif

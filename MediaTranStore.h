@@ -17,7 +17,7 @@
 #define CAMERA_CONF "/root/camera.conf"
 
 typedef struct RecordParas{
-    char cameraID[MAX_CAMERAID_LEN]; 
+    char cameraID[MAX_CAMERAID_LEN];
     char cameraIP[MAX_CAMERAIP_LEN];
     int cameraPort;
     int cameraType;  

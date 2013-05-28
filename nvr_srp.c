@@ -1,6 +1,15 @@
 #include "init.h" 
- 
+#include "nvr_srp.h"
+#include "rd_wr.h"
+#include "util.h"
+
 #define PRC_SVC
+
+static READres readres; 
+static HEADERinfo headerInfo; 
+static char readBuf[MAX_READ_SIZE];
+static char headBuf[MAX_HEADER_LENGTH]; 
+
 
 unsigned int
 nvrproc_close(unsigned int streamHandle)
@@ -134,9 +143,8 @@ unsigned int
 nvrproc_write(WRITEargs writeargs)
 {
 	//syslog(LOG_INFO,   "...nvrproc_write, begintime=%u...", writeargs.beginTime);
-	int wlen = 0, i = 0, writeCost = 0;
+	int i = 0, writeCost = 0;
 	struct timeval time2, time1;
-	int fd = 0;
 	//gettimeofday(&time2,NULL);
 
 	i = findStreamInfo(writeargs.recordHandle);
