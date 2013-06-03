@@ -124,6 +124,7 @@ nvrproc_create(CREATEargs createargs)
 	streamInfos[i]->BFlag = 0;
 	streamInfos[i]->isRecording = 1;
     streamInfos[i]->writeDataLen = 0;
+	streamInfos[i]->writeTime = 0;
     
 	pthread_mutex_lock(&streamInfos[i]->Mutex_Buffer[streamInfos[i]->BFlag]);
     
@@ -154,47 +155,50 @@ nvrproc_write(WRITEargs writeargs)
 		return -1;
 	}
 
-	//write to buf when the time is changed
-	
-	if(streamInfos[i]->writeTime == 0 || streamInfos[i]->writeTime == writeargs.beginTime)
-	{
+	//write to buf when the time is changed or buf is full
+	if (streamInfos[i]->writeTime !=0 && ((streamInfos[i]->writeTime != writeargs.beginTime ) \
+            || ((streamInfos[i]->writeDataLen + writeargs.data.data_len) > STREAM_BUFFER_SIZE) )) {
+            
+		syslog(LOG_DEBUG,	"...nvrproc_write, cameraID:%s, handle:0x%x, begintime:%u...", streamInfos[i]->cameraID, streamInfos[i]->handle, writeargs.beginTime);
+		if (writeTnodeToBuf(streamInfos[i], streamInfos[i]->writeTime, streamInfos[i]->writeDataLen) < 0) {
+			syslog(LOG_ERR,   "write error: write tnode to buf fail, IPC:%s, errno:%u.", streamInfos[i]->cameraID, ErrorFlag);
+			return -1;
+		}
+		
+		gettimeofday(&time1, NULL);
+		//printf("writetnode cost %d : %10ld\n",time1.tv_sec-time2.tv_sec,time1.tv_usec-time2.tv_usec);
+		
+		if (writeToBuf(streamInfos[i], streamInfos[i]->writeData, streamInfos[i]->writeDataLen) < 0) {
+			ErrorFlag = WRITE_LVM_ERR;
+			syslog(LOG_ERR,   "write error: write data to buf fail, IPC:%s, errno:%u.", streamInfos[i]->cameraID, ErrorFlag);
+			return -1;
+		}
+		
+		gettimeofday(&time2, NULL);
+		if (time1.tv_sec == time2.tv_sec)
+			writeCost = time2.tv_usec - time1.tv_usec;
+		else
+			writeCost = (time2.tv_sec * 1000000) + time2.tv_usec - time1.tv_usec - time1.tv_sec * 1000000;
+		if (writeCost > 1000)
+			syslog(LOG_DEBUG,   "write data cost %10ld us, IPC:%s",  writeCost, streamInfos[i]->cameraID);
+
+		//printf("... write %d bytes,time = %d ...",writeargs.data.data_len,writeargs.beginTime);
+		streamInfos[i]->v->storeAddr += streamInfos[i]->writeDataLen;
+		
+		bzero(streamInfos[i]->writeData, streamInfos[i]->writeDataLen);
+		streamInfos[i]->writeDataLen = 0;
 		streamInfos[i]->writeTime = writeargs.beginTime;
 		memcpy(streamInfos[i]->writeData + streamInfos[i]->writeDataLen, writeargs.data.data_val, writeargs.data.data_len);
-		streamInfos[i]->writeDataLen += writeargs.data.data_len; 
+		streamInfos[i]->writeDataLen += writeargs.data.data_len;
+
 		return writeargs.data.data_len;
 	}
-	
-	syslog(LOG_DEBUG,   "...nvrproc_write, cameraID:%s, handle:0x%x, begintime:%u...", streamInfos[i]->cameraID, streamInfos[i]->handle, writeargs.beginTime);
-	if (writeTnodeToBuf(streamInfos[i], streamInfos[i]->writeTime, streamInfos[i]->writeDataLen) < 0) {
-		syslog(LOG_ERR,   "write error: write tnode to buf fail, IPC:%s, errno:%u.", streamInfos[i]->cameraID, ErrorFlag);
-		return -1;
-	}
-	gettimeofday(&time1, NULL);
-	//printf("writetnode cost %d : %10ld\n",time1.tv_sec-time2.tv_sec,time1.tv_usec-time2.tv_usec);
 
-	if (writeToBuf(streamInfos[i], streamInfos[i]->writeData, streamInfos[i]->writeDataLen) < 0) {
-		ErrorFlag = WRITE_LVM_ERR;
-		syslog(LOG_ERR,   "write error: write data to buf fail, IPC:%s, errno:%u.", streamInfos[i]->cameraID, ErrorFlag);
-		return -1;
-	}
-	streamInfos[i]->v->storeAddr += streamInfos[i]->writeDataLen;
-    
 	streamInfos[i]->writeTime = writeargs.beginTime;
-	bzero(streamInfos[i]->writeData, streamInfos[i]->writeDataLen);
-	streamInfos[i]->writeDataLen = 0;
 	memcpy(streamInfos[i]->writeData + streamInfos[i]->writeDataLen, writeargs.data.data_val, writeargs.data.data_len);
 	streamInfos[i]->writeDataLen += writeargs.data.data_len; 
-
-	gettimeofday(&time2, NULL);
-	if (time1.tv_sec == time2.tv_sec)
-		writeCost = time2.tv_usec - time1.tv_usec;
-	else
-		writeCost = (time2.tv_sec * 1000000) + time2.tv_usec - time1.tv_usec - time1.tv_sec * 1000000;
-	if (writeCost > 1000)
-		syslog(LOG_DEBUG,   "write data cost %10ld us, IPC:%s",  writeCost, streamInfos[i]->cameraID);
-
-	//printf("... write %d bytes,time = %d ...",writeargs.data.data_len,writeargs.beginTime);
 	return writeargs.data.data_len;
+
 }
 
 int
