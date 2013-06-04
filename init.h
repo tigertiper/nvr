@@ -33,8 +33,8 @@
 #define OPEN_MAX 256
 #define LOCKFILE "/var/run/nvrd.pid"
 #define LOCKMODE (S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)
-#define VERDATA "2013.06.03"
-#define NVRDVER "1.165"
+#define VERDATA "2013.06.04"
+#define NVRDVER "1.16.5"
 #ifdef JYJ
 #define PRJNAME "JYJ"
 #endif

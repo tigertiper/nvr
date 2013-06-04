@@ -122,7 +122,7 @@ void* MediaStoreThread(void *arg)
             fclose(fp); 
             
             for(i=0;i<linesnum;i++){
-                     syslog(LOG_ERR,"cameraType:%d cameraID:%s cameraIP:%s cameraPort:%d\n",paras[i].cameraType,paras[i].cameraID,paras[i].cameraIP,paras[i].cameraPort);
+                     syslog(LOG_INFO,"cameraType:%d cameraID:%s cameraIP:%s cameraPort:%d\n",paras[i].cameraType,paras[i].cameraID,paras[i].cameraIP,paras[i].cameraPort);
                      switch(paras[i].cameraType){
                          case 1: //706camera
                              pthread_create(&id[i], NULL, Aero_Store_Thread, (void *)&paras[i]);

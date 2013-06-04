@@ -9,13 +9,13 @@
 #define MAX_STREAMS 100
 #define MAX_CAMERA_NUMS 100
 #define CAMERAIDLEN 256
-#define STREAM_BUFFER_SIZE 10*1024*1024
+#define STREAM_BUFFER_SIZE (10*1024*1024)
 #define HASH(hd) (((unsigned int)hd%MAX_STREAMS))
 
 
 #define MAX_HEADER_LENGTH 10240
 #define LVMTESTNAME "/dev/vg01/lv02"
-#define MAX_READ_SIZE 5*1024*1024
+#define MAX_READ_SIZE (30*1024*1024)
 #define MAXLINE 512
 #define MAX_LV_NUM 256
 #define MAX_RECORD_DATA_SIZE (1024*1024)    //the bytes of a unit of write data 
