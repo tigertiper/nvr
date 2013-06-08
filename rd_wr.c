@@ -1478,8 +1478,14 @@ uint32_t
 findOriginTime(vnode * v, int fd)
 { 
     long long offset;
-    tnode originTnode;  
-    if( v->SpaceState == 0 ) {
+    tnode originTnode;
+	if (v->SpaceState == 1) {
+        return v->origin_time;
+    }
+	else if (v->SpaceState == 2) {
+        offset = v->firstIndex- FISTTIMESIZE * Tnode_SIZE + v->origin_count*sizeof(tnode);
+    }
+    else {
         if(v->count == 2){
             offset = v->firstIndex - FISTTIMESIZE * Tnode_SIZE + v->wr_count* sizeof(tnode);
         }
@@ -1487,16 +1493,6 @@ findOriginTime(vnode * v, int fd)
             offset = v->firstIndex - FISTTIMESIZE * Tnode_SIZE;
         }              
     }
-    else if (v->SpaceState == 1) {
-        return v->origin_time;
-    }
-    else if (v->SpaceState == 3) {
-        offset = v->firstIndex - FISTTIMESIZE * Tnode_SIZE + v->wr_count* sizeof(tnode);
-    }
-    else {
-        offset = v->firstIndex- FISTTIMESIZE * Tnode_SIZE + v->origin_count*sizeof(tnode);
-    }
-
     if (_read(fd, (char*)&originTnode, sizeof(tnode), offset) < 0) {
 		ErrorFlag = READ_LVM_ERR;
 		return ERR_RETURN;
@@ -2342,7 +2338,7 @@ int initCameraInfos()
             } 
             if((fd=open(lv_name, O_RDONLY))<0){
                  ErrorFlag=OPEN_FILE_ERR;
-				 syslog(LOG_ERR, "opening vediovol %s error!",lv_name);
+				 syslog(LOG_ERR, "opening videovol %s error!",lv_name);
                  return -1;
             }
             if((vbitmap=(char *)malloc(sizeof(char) *(MaxUsers / 8)))==NULL){
@@ -2357,7 +2353,7 @@ int initCameraInfos()
 				 syslog(LOG_ERR, "read vbitmap error!");
                  return -1;
             }
-            syslog(LOG_INFO, "vediovol_%d:%s, freesize:%ldM.",i,lv[i].lv_name,lv[i].length);
+            syslog(LOG_INFO, "videovol_%d:%s, freesize:%ldM.",i,lv[i].lv_name,lv[i].length);
             count=0;
             while(count<MaxUsers) {
                 if(bit(vbitmap,count)){
@@ -2369,7 +2365,7 @@ int initCameraInfos()
                        }
                        buf_to_vnode(buf,&v);
                        addCameraInfo(v.cameraid,lv_name);
-                       syslog(LOG_INFO, "vediovol_%d->%s", i, v.cameraid);
+                       syslog(LOG_INFO, "videovol_%d->%s", i, v.cameraid);
                 }
             count++;
             }

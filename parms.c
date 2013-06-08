@@ -422,6 +422,7 @@ put_vnode(_sbinfo sbinfo, vnode * v, char *_vbitmap, int ID)
 {
 	int fd;
 	char buf[Vnode_SIZE];
+	bzero(buf, Vnode_SIZE);
 	pthread_mutex_lock(&sbinfo->mutex);
 	if ((fd = open(sbinfo->volName, O_WRONLY)) < 0) {
 		pthread_mutex_unlock(&sbinfo->mutex);

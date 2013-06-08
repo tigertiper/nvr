@@ -160,6 +160,9 @@ nvrproc_write(WRITEargs writeargs)
             || ((streamInfos[i]->writeDataLen + writeargs.data.data_len) > STREAM_BUFFER_SIZE) )) {
             
 		syslog(LOG_DEBUG,	"...nvrproc_write, cameraID:%s, handle:0x%x, begintime:%u...", streamInfos[i]->cameraID, streamInfos[i]->handle, writeargs.beginTime);
+#ifdef SPACE_TIME_SYNCHRONIZATION
+		syslog(LOG_DEBUG, "cameraID:%s, spacestate:%d", streamInfos[i]->cameraID, streamInfos[i]->v->SpaceState);
+#endif
 		if (writeTnodeToBuf(streamInfos[i], streamInfos[i]->writeTime, streamInfos[i]->writeDataLen) < 0) {
 			syslog(LOG_ERR,   "write error: write tnode to buf fail, IPC:%s, errno:%u.", streamInfos[i]->cameraID, ErrorFlag);
 			return -1;
@@ -544,7 +547,7 @@ nvrproc_creatrecvol(CREATRECVOLargs creatRecVolArgs)
         }
 
         lv[i].length = get_free_vol_size(lv[i].lv_name);
-        syslog(LOG_ERR,  "create recordvol sucess, IPC:%s, vediovol:%s.\n",creatRecVolArgs.name, lv[i].lv_name);
+        syslog(LOG_ERR,  "create recordvol sucess, IPC:%s, videovol:%s.\n",creatRecVolArgs.name, lv[i].lv_name);
     }
     else
     {
@@ -557,7 +560,7 @@ nvrproc_creatrecvol(CREATRECVOLargs creatRecVolArgs)
         	syslog(LOG_ERR,  "create recordvol fail, IPC:%s, errno:%u.\n",creatRecVolArgs.name, ErrorFlag);
         	return ret;
         }
-        syslog(LOG_INFO,  "create recordvol success, IPC:%s, vediovol:%s.\n",creatRecVolArgs.name, creatRecVolArgs.volumeid);
+        syslog(LOG_INFO,  "create recordvol success, IPC:%s, videovol:%s.\n",creatRecVolArgs.name, creatRecVolArgs.volumeid);
     }
 	return ret;
 }
@@ -582,13 +585,13 @@ nvrproc_delrecvol(DELRECVOLargs delRecVolArgs)
 int
 nvrproc_delvedvol(DELVEDVOLargs delVedVolArgs)
 {
-	syslog(LOG_INFO,  "deleting vediovol, volname:%s...", delVedVolArgs.volname);
+	syslog(LOG_INFO,  "deleting videovol, volname:%s...", delVedVolArgs.volname);
 	int ret = 0; 
     char cmd[256];
 	ret = DeleteVideoVol(delVedVolArgs.volname);
 	if(ret < 0)
 	{
-		syslog(LOG_ERR,  "delete vediovol fail, volname:%s, errno:%u.\n",delVedVolArgs.volname, ErrorFlag);
+		syslog(LOG_ERR,  "delete videovol fail, volname:%s, errno:%u.\n",delVedVolArgs.volname, ErrorFlag);
 		return ret;
 	}
     if(delVedVolArgs.mode) 
@@ -596,7 +599,7 @@ nvrproc_delvedvol(DELVEDVOLargs delVedVolArgs)
         sprintf(cmd, "lvremove -f %s >/dev/null 2>&1", delVedVolArgs.volname);
         system(cmd);
     }
-	syslog(LOG_INFO,  "delete vediovol success, volname:%s.\n",delVedVolArgs.volname);
+	syslog(LOG_INFO,  "delete videovol success, volname:%s.\n",delVedVolArgs.volname);
     
 	return ret;
 }
