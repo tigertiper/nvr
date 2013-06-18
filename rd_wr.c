@@ -880,39 +880,66 @@ long long
 getAddrByTime(int timeBegin, _vnodeInfo vi, vnode * v, unsigned long long *beginTime_addr)
 {				//dev modeÊÇË³ÐòºÍµ¹Ðò¡£
 	//tnode* ptn = (tnode *)vn->FirstIndexTable; // record firstindex address;
-	int i = 0;
+	int i = 0,j=0;
 	int startpos = 0;
 	uint64_t addr, addr1;
 	uint32_t end = 0;
 	uint32_t size;
+	int flag=0;
+	int m=0;
 	if (v->count == 2)
 		startpos = v->wr_count;
 	if (_read(vi->fd, (char *)vi->t, _TimeBuffSize(v) * sizeof(tnode), v->firstIndex - FISTTIMESIZE * Tnode_SIZE) < 0) {
 		ErrorFlag = READ_LVM_ERR;
-		goto err;
-	} 
+		return 0;
+	}
 	size = ((i + startpos) % _FISTTIMESIZE(v)) * Tnode_SIZE * _TLEN(v);
 	addr = v->firstIndex + size;
 	addr1 = 0;
-	while (timeBegin >= vi->t[(i + startpos) % _FISTTIMESIZE(v)].time)	//retrival the firstindex by time
+	//while (timeBegin >= vi->t[(i + startpos) % _FISTTIMESIZE(v)].time)	//retrival the firstindex by time
+	while (1)	//retrival the firstindex by time
 	{
-		if (timeBegin == vi->t[(i + startpos) % _FISTTIMESIZE(v)].time
-		    || timeBegin < vi->t[(i + 1 + startpos) % _FISTTIMESIZE(v)].time || (v->count == 1 && i == (v->wr_count - 1))
+		if ((timeBegin >= vi->t[(i + startpos) % _FISTTIMESIZE(v)].time
+		    && timeBegin < vi->t[(i + 1 + startpos) % _FISTTIMESIZE(v)].time) || (v->count == 1 && i == (v->wr_count - 1))
 		    || i == (_FISTTIMESIZE(v) - 1)) {
+		    if(flag==0){
+				flag=1;
+				m=i;
+				i++;
+				continue;
+			}
 			size = ((i + startpos) % _FISTTIMESIZE(v)) * Tnode_SIZE * _TLEN(v);
 			addr = v->firstIndex + size;
+			//end = read_tnode(timeBegin, vi, v, addr, beginTime_addr, &addr1, 1);
 			if ((end = read_tnode(timeBegin, vi, v, addr, beginTime_addr, &addr1, 1)) <= 0)
-				goto err;
+			{
+			  if(flag==1){
+					size = ((m + startpos) % _FISTTIMESIZE(v)) * Tnode_SIZE * _TLEN(v);
+					addr = v->firstIndex + size;
+					if ((end = read_tnode(timeBegin, vi, v, addr, beginTime_addr, &addr1, 1)) <= 0)
+					{
+					  return 0;
+					}
+					return addr1;
+			  }
+			  return 0;
+			}	
+			return addr1;
+		}
 
-			break;
-		} 
 		if (++i >= _FISTTIMESIZE(v))
 			break;
 	} 
-	if (i >= _FISTTIMESIZE(v))
-		goto err;
-	return addr1;
-      err:return 0;
+  	if(flag==1){
+  		size = ((m + startpos) % _FISTTIMESIZE(v)) * Tnode_SIZE * _TLEN(v);
+  		addr = v->firstIndex + size;
+  		if ((end = read_tnode(timeBegin, vi, v, addr, beginTime_addr, &addr1, 1)) <= 0)
+  		{
+  		  return 0;
+  		}
+  		return addr1;
+    }	
+	return 0;
 }
 
 _vnodeInfo
