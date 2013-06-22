@@ -863,7 +863,7 @@ read_tnode(unsigned int timeBegin, _vnodeInfo vi, vnode * v, long long addr, uns
 		if (j < TimeBuffSize)
 			vi->t[j].time = 0;	//表示该tnode无用
 		if (mode && !flag && (v->count == 2 || (v->count == 1 && addr1 < v->queryAdd))
-		    && vi->t[TimeBuffSize - 1].time < timeBegin)
+		    /*&& vi->t[TimeBuffSize - 1].time < timeBegin*/)
 			addr = addr1;
 		else
 			break;
@@ -882,63 +882,44 @@ getAddrByTime(int timeBegin, _vnodeInfo vi, vnode * v, unsigned long long *begin
 	//tnode* ptn = (tnode *)vn->FirstIndexTable; // record firstindex address;
 	int i = 0,j=0;
 	int startpos = 0;
-	uint64_t addr, addr1;
+	uint64_t addr = 0, addr1 =0;
 	uint32_t end = 0;
 	uint32_t size;
 	int flag=0;
 	int m=0;
-	if (v->count == 2)
+	if (v->count == 2) {
 		startpos = v->wr_count;
+		m = _FISTTIMESIZE(v) - 1;
+	}
+	else {
+		startpos = 0;
+		m = v->wr_count-1;
+	} 		
 	if (_read(vi->fd, (char *)vi->t, _TimeBuffSize(v) * sizeof(tnode), v->firstIndex - FISTTIMESIZE * Tnode_SIZE) < 0) {
 		ErrorFlag = READ_LVM_ERR;
 		return 0;
 	}
-	size = ((i + startpos) % _FISTTIMESIZE(v)) * Tnode_SIZE * _TLEN(v);
-	addr = v->firstIndex + size;
-	addr1 = 0;
+	syslog(LOG_INFO, "timeBegin=%d", timeBegin);
+	syslog(LOG_INFO, "m=%d", m);
+	for (i=0; i<=(m+1); i++) {
+		syslog(LOG_INFO, "t[%d] = %d", i, vi->t[(i + startpos) % _FISTTIMESIZE(v)]);
+	}
 	//while (timeBegin >= vi->t[(i + startpos) % _FISTTIMESIZE(v)].time)	//retrival the firstindex by time
-	while (1)	//retrival the firstindex by time
+	for (i=0; i <=m; i++)	//retrival the firstindex by time
 	{
-		if ((timeBegin >= vi->t[(i + startpos) % _FISTTIMESIZE(v)].time
-		    && timeBegin < vi->t[(i + 1 + startpos) % _FISTTIMESIZE(v)].time) || (v->count == 1 && i == (v->wr_count - 1))
-		    || i == (_FISTTIMESIZE(v) - 1)) {
-		    if(flag==0){
-				flag=1;
-				m=i;
-				i++;
-				continue;
-			}
+		if (i == m || (timeBegin >= vi->t[(i + startpos) % _FISTTIMESIZE(v)].time
+		    && timeBegin < vi->t[(i + 1 + startpos) % _FISTTIMESIZE(v)].time)) {
 			size = ((i + startpos) % _FISTTIMESIZE(v)) * Tnode_SIZE * _TLEN(v);
 			addr = v->firstIndex + size;
-			//end = read_tnode(timeBegin, vi, v, addr, beginTime_addr, &addr1, 1);
 			if ((end = read_tnode(timeBegin, vi, v, addr, beginTime_addr, &addr1, 1)) <= 0)
 			{
-			  if(flag==1){
-					size = ((m + startpos) % _FISTTIMESIZE(v)) * Tnode_SIZE * _TLEN(v);
-					addr = v->firstIndex + size;
-					if ((end = read_tnode(timeBegin, vi, v, addr, beginTime_addr, &addr1, 1)) <= 0)
-					{
-					  return 0;
-					}
-					return addr1;
-			  }
-			  return 0;
-			}	
+				syslog(LOG_INFO, "fail find begintime!");
+				return 0;
+			}
+			syslog(LOG_INFO, "sucess find begintime!");
 			return addr1;
 		}
-
-		if (++i >= _FISTTIMESIZE(v))
-			break;
 	} 
-  	if(flag==1){
-  		size = ((m + startpos) % _FISTTIMESIZE(v)) * Tnode_SIZE * _TLEN(v);
-  		addr = v->firstIndex + size;
-  		if ((end = read_tnode(timeBegin, vi, v, addr, beginTime_addr, &addr1, 1)) <= 0)
-  		{
-  		  return 0;
-  		}
-  		return addr1;
-    }	
 	return 0;
 }
 
