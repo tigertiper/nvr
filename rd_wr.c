@@ -1628,7 +1628,7 @@ GetRecordInfoOnebyOne(const char *cameraid, uint32_t * pStartTime, uint32_t * pE
 		len = (v->curSnode - addr) / SEG_SIZE;
         m = *n;
 	}
-    if(*n > len -1){
+    if(*n > len -1 || !len){
         close(fd);
         return 2;
     }
