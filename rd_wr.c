@@ -899,11 +899,6 @@ getAddrByTime(int timeBegin, _vnodeInfo vi, vnode * v, unsigned long long *begin
 		ErrorFlag = READ_LVM_ERR;
 		return 0;
 	}
-	syslog(LOG_INFO, "timeBegin=%d", timeBegin);
-	syslog(LOG_INFO, "m=%d", m);
-	for (i=0; i<=(m+1); i++) {
-		syslog(LOG_INFO, "t[%d] = %d", i, vi->t[(i + startpos) % _FISTTIMESIZE(v)]);
-	}
 	//while (timeBegin >= vi->t[(i + startpos) % _FISTTIMESIZE(v)].time)	//retrival the firstindex by time
 	for (i=0; i <=m; i++)	//retrival the firstindex by time
 	{
@@ -919,7 +914,8 @@ getAddrByTime(int timeBegin, _vnodeInfo vi, vnode * v, unsigned long long *begin
 			syslog(LOG_INFO, "sucess find begintime!");
 			return addr1;
 		}
-	} 
+	}
+	syslog(LOG_INFO, "fail find begintime!");
 	return 0;
 }
 
