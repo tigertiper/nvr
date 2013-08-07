@@ -1593,7 +1593,7 @@ GetRecordInfo(const char *cameraid, uint32_t * pStartTime, uint32_t * pEndTime, 
 }
 
 uint32_t
-GetRecordInfoOnebyOne(const char *cameraid, uint32_t * pStartTime, uint32_t * pEndTime, seginfo * si, uint32_t *n)
+GetRecordInfoOnebyOne(const char *cameraid, uint32_t * pStartTime, uint32_t * pEndTime, seginfo * si, uint32_t n)
 {
 	int ID, fd,len,m;
 	vnode *v;
@@ -1604,6 +1604,8 @@ GetRecordInfoOnebyOne(const char *cameraid, uint32_t * pStartTime, uint32_t * pE
 	int handle;
 	char buf[16 * 1024];
     uint32_t origin_time;
+	uint32_t startime = *pStartTime;
+	uint32_t endtime = *pEndTime;
 	handle = get_dev_ID(cameraid, &sbinfo);
 	if (handle == -1)
 		return ERR_RETURN;
@@ -1619,12 +1621,12 @@ GetRecordInfoOnebyOne(const char *cameraid, uint32_t * pStartTime, uint32_t * pE
     addr = v->block[0][0] * (sbinfo->_es->blockSize) + DataAddr;
 	if (v->SnodeRecycle == ISRecycled) {
 		len = 1024;
-		m = (*n + (v->curSnode - addr) / SEG_SIZE)%1024;
+		m = (n + (v->curSnode - addr) / SEG_SIZE)%1024;
 	} else {
 		len = (v->curSnode - addr) / SEG_SIZE;
-        m = *n;
+        m = n;
 	}
-    if(*n > len -1 || !len){
+    if(n > len -1 || !len){
         close(fd);
         return 2;
     }
@@ -1638,9 +1640,22 @@ GetRecordInfoOnebyOne(const char *cameraid, uint32_t * pStartTime, uint32_t * pE
         close(fd);
         return 1;
     }
+	if((int)endtime != -1) {
+		if(sIndex->end_time < startime || sIndex->start_time > endtime){
+			close(fd);
+			return 1;
+		}
+	}
     *pStartTime = sIndex->start_time;
     *pEndTime = sIndex->end_time;
-
+	if((int)endtime != -1) {
+		if (startime > sIndex->start_time){
+			*pStartTime = startime;			
+		}
+		if (endtime < sIndex->end_time){
+			*pEndTime = endtime;
+		}
+	}
     origin_time = findOriginTime(v, fd);
     if(origin_time == ERR_RETURN)
         goto err;
@@ -1651,7 +1666,6 @@ GetRecordInfoOnebyOne(const char *cameraid, uint32_t * pStartTime, uint32_t * pE
     if(*pStartTime < origin_time){
         *pStartTime = origin_time;
     }
-    
     addr = v->firstIndex - 1024 * SEGINFO_SIZE - FISTTIMESIZE * Tnode_SIZE + m * SEGINFO_SIZE;
  	if (_read(fd, buf, DSI_SIZE, addr) < 0) {
 		ErrorFlag = READ_LVM_ERR;
@@ -1665,7 +1679,6 @@ GetRecordInfoOnebyOne(const char *cameraid, uint32_t * pStartTime, uint32_t * pE
      close(fd);
      return ERR_RETURN;
 }
-
 
 int
 GetRecordSegSize(const char *cameraid, uint32_t StartTime, uint32_t EndTime)

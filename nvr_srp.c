@@ -384,7 +384,7 @@ nvrproc_searchrecordbyorder(RECORDBYORDERargs searchargs)
 	//syslog(LOG_INFO,  "%s start to search record by order!", searchargs.camerID);
 	RECORDBYORDERres recordInfo;
 	seginfo si;
-	recordInfo.flag=GetRecordInfoOnebyOne(searchargs.camerID, &searchargs.beginTime, &searchargs.endTime, &si, &searchargs.num);
+	recordInfo.flag=GetRecordInfoOnebyOne(searchargs.camerID, &searchargs.beginTime, &searchargs.endTime, &si, searchargs.num);
 	if(recordInfo.flag == ERR_RETURN)
 	{
 		syslog(LOG_ERR, "search record fail, IPC:%s, errono:%u.\n", searchargs.camerID, ErrorFlag);

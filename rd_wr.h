@@ -71,7 +71,7 @@ uint32_t _GetRecordSegHead(const char *cameraid, uint32_t * pStartTime,
 uint32_t GetRecordInfo(const char *cameraid, uint32_t * pStartTime,
 		       uint32_t * pEndTime, seginfo * si);
 uint32_t GetRecordInfoOnebyOne(const char *cameraid, uint32_t * pStartTime, 
-               uint32_t * pEndTime, seginfo * si, uint32_t *n);
+               uint32_t * pEndTime, seginfo * si, uint32_t n);
 
 int DeleteRecordPara(const char *cameraid, uint32_t beginTime,
 		     uint32_t endTime);
