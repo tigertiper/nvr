@@ -3,7 +3,8 @@
 
 #include <pthread.h>
 #include "info.h" 
-
+//typedef unsigned long long uint64_t;
+#include <stdint.h>
 #define MAX_CAMERA 100
 #define MAX_LOGINS 1024
 #define MAX_STREAMS 100
